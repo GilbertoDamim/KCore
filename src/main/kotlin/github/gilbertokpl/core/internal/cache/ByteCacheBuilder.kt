@@ -1,15 +1,9 @@
 package github.gilbertokpl.core.internal.cache
 
-import github.gilbertokpl.core.external.CorePlugin
 import github.gilbertokpl.core.external.cache.interfaces.CacheBuilder
 import org.bukkit.entity.Player
-import org.checkerframework.checker.units.qual.K
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.json.JSONObject
-import java.io.File
-import java.nio.file.Files
-import java.sql.SQLIntegrityConstraintViolationException
 
 internal class ByteCacheBuilder<T>(
     private val table: Table,
@@ -18,9 +12,7 @@ internal class ByteCacheBuilder<T>(
 ) : CacheBuilder<T> {
 
     private val hashMap = mutableMapOf<String, T?>()
-
-    private var toUpdate = JSONObject()
-    private var jsonPath = ""
+    private val toUpdate = mutableListOf<String>()
 
     override fun getMap(): Map<String, T?> {
         return hashMap.toMap()
@@ -36,8 +28,7 @@ internal class ByteCacheBuilder<T>(
 
     override fun set(entity: String, value: T) {
         hashMap[entity.lowercase()] = value
-        toUpdate.put(entity.lowercase(), value)
-        saveJson()
+        toUpdate += entity.lowercase()
     }
 
     override fun set(entity: String, value: T, override: Boolean) {
@@ -54,93 +45,48 @@ internal class ByteCacheBuilder<T>(
 
     override fun remove(entity: String) {
         hashMap[entity.lowercase()] = null
-        toUpdate.put(entity.lowercase(), "")
-        saveJson()
+        if (entity.lowercase() in toUpdate) {
+            toUpdate.remove(entity.lowercase())
+        }
     }
 
-    private fun save(list: Set<String>) {
-        if (toUpdate.isEmpty) {
-            saveJson()
-            return
-        }
-        val existingRows = table.select { primaryColumn inList toUpdate.keySet() }.toList().associateBy { it[primaryColumn] }
-
+    private fun save(list: List<String>) {
+        val currentHash = getMap()
         for (i in list) {
-            if (i in toUpdate.keySet()) {
+            if (i in toUpdate) {
                 toUpdate.remove(i)
-                val value = hashMap[i]
-
-                if (value == null) {
-                    existingRows[i]?.let { row ->
-                        table.deleteWhere { primaryColumn eq row[primaryColumn] }
+                val tab = table.select { primaryColumn eq i }
+                val value = currentHash[i]
+                if (tab.empty()) {
+                    if (value == null) continue
+                    table.insert {
+                        it[primaryColumn] = i
+                        it[column] = value
                     }
                 } else {
-                    if (existingRows[i] == null) {
-                        try {
-                            table.insert {
-                                it[primaryColumn] = i
-                                it[column] = value
-                            }
-                        } catch (sql : SQLIntegrityConstraintViolationException) {
-                            table.update({ primaryColumn eq i }) {
-                                it[column] = value
-                            }
-                        }
-                    } else {
-                        table.update({ primaryColumn eq i }) {
-                            it[column] = value
-                        }
+                    if (value == null) {
+                        table.deleteWhere { primaryColumn eq i }
+                        continue
+                    }
+                    table.update({ primaryColumn eq i }) {
+                        it[column] = value
                     }
                 }
             }
         }
-        saveJson()
     }
 
     override fun update() {
-        save(toUpdate.keySet())
+        save(toUpdate.toList())
     }
 
-    override fun load(corePlugin: CorePlugin) {
-        jsonPath = "./${corePlugin.mainPath}/sql/internal/ByteCacheBuilder-${column.name.lowercase()}.json"
-
-        for (row in table.selectAll()) {
-            hashMap[row[primaryColumn]] = row[column]
-        }
-
-        val file = File(jsonPath)
-
-        if (file.exists()) {
-            val jsonString = file.readText()
-            val jsonObject = JSONObject(jsonString)
-
-            for (key in jsonObject.keys()) {
-                val jsonValue = jsonObject[key]
-
-                val value = when (column.columnType) {
-                    IntegerColumnType() -> jsonValue.toString().toInt() as T
-                    LongColumnType() -> jsonValue.toString().toLong() as T
-                    DoubleColumnType() -> jsonValue.toString().toDouble() as T
-                    else -> jsonValue as T
-                }
-
-                hashMap[key.lowercase()] = value
-            }
-        } else {
-            File("./${corePlugin.mainPath}/sql/internal").mkdirs()
+    override fun load() {
+        for (i in table.selectAll()) {
+            hashMap[i[primaryColumn]] = i[column]
         }
     }
 
     override fun unload() {
-        save(toUpdate.keySet())
-    }
-
-    private fun saveJson() {
-        if (toUpdate.isEmpty) {
-            File(jsonPath).delete()
-        }
-        else {
-            File(jsonPath).writeText(toUpdate.toString())
-        }
+        save(toUpdate.toList())
     }
 }

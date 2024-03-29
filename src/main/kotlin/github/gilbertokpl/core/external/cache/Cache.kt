@@ -120,7 +120,7 @@ class Cache(core: CorePlugin) {
         corePlugin.getReflection().getClasses(cachePackage)
         transaction(corePlugin.sql) {
             for (i in toByteUpdate) {
-                i.load(corePlugin)
+                i.load()
             }
         }
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay({

@@ -11,7 +11,7 @@ class SimpleCacheBuilder<T> : CacheBuilder<T> {
         TODO("Not yet implemented")
     }
 
-    override fun load(corePlugin: CorePlugin) {
+    override fun load() {
         TODO("Not yet implemented")
     }
 

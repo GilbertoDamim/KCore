@@ -7,7 +7,7 @@ interface CacheBuilder<T> {
 
     fun update()
 
-    fun load(corePlugin: CorePlugin)
+    fun load()
 
     fun unload()
 

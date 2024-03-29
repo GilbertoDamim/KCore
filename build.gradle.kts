@@ -1,13 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "1.9.22"
+    kotlin("jvm") version "1.9.23"
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 val base = "github.gilbertokpl.library"
 
-version = "1.1.2"
+version = "1.1.3"
 
 
 repositories {
@@ -39,17 +39,17 @@ dependencies {
 
 
     //exposed
-    compileOnly("org.jetbrains.exposed:exposed-core:0.47.0") {
+    compileOnly("org.jetbrains.exposed:exposed-core:0.49.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    compileOnly("org.jetbrains.exposed:exposed-dao:0.47.0") {
+    compileOnly("org.jetbrains.exposed:exposed-dao:0.49.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    compileOnly("org.jetbrains.exposed:exposed-jdbc:0.47.0") {
+    compileOnly("org.jetbrains.exposed:exposed-jdbc:0.49.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
@@ -62,7 +62,7 @@ dependencies {
     }
 
     //Mysql with MariaDB driver database
-    compileOnly("org.mariadb.jdbc:mariadb-java-client:3.3.2") {
+    compileOnly("org.mariadb.jdbc:mariadb-java-client:3.3.3") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
@@ -82,17 +82,17 @@ dependencies {
     }
 
     //host info
-    compileOnly("com.github.oshi:oshi-core:6.4.12") {
+    compileOnly("com.github.oshi:oshi-core:6.5.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.22") {
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.23") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    compileOnly("net.dv8tion:JDA:5.0.0-beta.20") {
+    compileOnly("net.dv8tion:JDA:5.0.0-beta.21") {
         exclude("club.minnced","opus-java")
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
@@ -115,7 +115,7 @@ tasks.shadowJar {
             "Plugin-Creator" to "Gilberto",
             "Plugin-Name" to "TotalEssentials",
             "Plugin-Github" to "https://github.com/GilbertoKPL/TotalEssentials",
-            "Class-Path" to "TotalEssentials/lib/TotalEssentials-lib-1.1.2.jar"
+            "Class-Path" to "TotalEssentials/lib/TotalEssentials-lib-$version.jar"
         )
     }
 
