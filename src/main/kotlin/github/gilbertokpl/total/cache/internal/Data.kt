@@ -9,6 +9,9 @@ internal object Data {
 
     lateinit var sql: Database
 
+    //limit
+    val limitPlayerEdit: MutableMap<Player, String> = mutableMapOf()
+
     //vip
     val tokenVip: MutableMap<String, Long> = mutableMapOf()
     val playerVipEdit: MutableMap<Player, String> = mutableMapOf()
@@ -26,7 +29,7 @@ internal object Data {
 
     //editKit
     val playerEditKit: MutableMap<Player, String> = HashMap()
-    val editKitItemCache: MutableMap<Int, ItemStack> = HashMap()
+    var editKitItemCache: MutableMap<Int, ItemStack> = HashMap()
     val playerEditKitChat: MutableMap<Player, String> = HashMap()
 
     //reset

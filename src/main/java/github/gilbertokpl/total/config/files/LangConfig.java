@@ -463,6 +463,16 @@ public class LangConfig implements DefaultLang {
     )
     public static String authIpMessage;
 
+    //LIMIT
+
+    @Values(
+            {
+                    @Value(value = "&cEste grupo não existe no servidor", lang = LangTypes.PT_BR),
+                    @Value(value = "", lang = LangTypes.EN_US)
+            }
+    )
+    public static String limitGroupDoNotExist;
+
     //PLAYTIME
 
 

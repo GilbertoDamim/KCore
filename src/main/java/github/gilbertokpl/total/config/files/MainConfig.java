@@ -183,6 +183,16 @@ public class MainConfig implements DefaultConfig {
 
     @Comments(
             {
+                    @Comment(annotations = "Se estiver ativado (true), O Limitador será ativado.", lang = LangTypes.PT_BR),
+                    @Comment(annotations = "If enabled (true), The playtime will be enabled.", lang = LangTypes.EN_US)
+            }
+    )
+    public static Boolean limitActivated = false;
+
+    //playtime
+
+    @Comments(
+            {
                     @Comment(annotations = "Se estiver ativado (true), O playtime será ativado.", lang = LangTypes.PT_BR),
                     @Comment(annotations = "If enabled (true), The playtime will be enabled.", lang = LangTypes.EN_US)
             }

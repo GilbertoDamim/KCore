@@ -100,8 +100,8 @@ class InventoryClick : Listener {
             return false
         }
         if (inventoryName[0] == "§eVipItens") {
-            val p = e.whoClicked as Player
             e.isCancelled = true
+            val p = e.whoClicked as Player
             if (e.rawSlot != e.slot) {
                 return false
             }
@@ -147,8 +147,8 @@ class InventoryClick : Listener {
             return false
         }
         if (inventoryName[0] == "§ePLAYTIME") {
-            val p = e.whoClicked as Player
             e.isCancelled = true
+            val p = e.whoClicked as Player
             val number = e.slot
             if (number == 27 && inventoryName[1].toInt() > 1) {
                 p.openInventory(Data.playTimeInventoryCache[inventoryName[1].toInt() - 1]!!)
@@ -173,8 +173,8 @@ class InventoryClick : Listener {
             return false
         }
         if (inventoryName[0] == "§eSHOP") {
-            val p = e.whoClicked as Player
             e.isCancelled = true
+            val p = e.whoClicked as Player
             val number = e.slot
             if (number < 27) {
                 val loc = Data.shopItemCache[(number + 1) + ((inventoryName[1].toInt() - 1) * 27)]
@@ -235,9 +235,9 @@ class InventoryClick : Listener {
             return false
         }
         if (inventoryName[0] == "§eKit") {
+            e.isCancelled = true
             val meta = e.currentItem!!.itemMeta ?: return false
             val p = e.whoClicked as Player
-            e.isCancelled = true
 
             val number = e.slot
             if (number == 36) {
@@ -262,8 +262,8 @@ class InventoryClick : Listener {
             return true
         }
         if (inventoryName[0] == "§eKits") {
-            val p = e.whoClicked as Player
             e.isCancelled = true
+            val p = e.whoClicked as Player
             val number = e.slot
             if (number < 27) {
                 val kit =

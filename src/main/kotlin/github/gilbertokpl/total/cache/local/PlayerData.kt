@@ -37,6 +37,8 @@ object PlayerData : CacheBase {
     val playTimeCache = ins.long(this, PlayerDataSQL.PlaytimeTable)
     val colorCache = ins.string(this, PlayerDataSQL.colorTable)
     val CommandCache = ins.string(this, PlayerDataSQL.CommandTable)
+    val LimiterItemCache = ins.hashMap(this, PlayerDataSQL.LimiterItemTable, LimiterItemSerializer())
+    val LimiterLocationCache = ins.hashMap(this, PlayerDataSQL.LimiterLocationTable, LimiterLocationSerializer())
     val inInvSee = ins.simplePlayer()
     val homeLimitCache = ins.simpleInteger()
     val inTeleport = ins.simpleBoolean()

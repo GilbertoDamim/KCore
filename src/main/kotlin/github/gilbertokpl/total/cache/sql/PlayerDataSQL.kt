@@ -21,5 +21,7 @@ object PlayerDataSQL : Table("PlayerData" + MainConfig.databaseManager) {
     val PlaytimeTable = long("Playtime").default(0)
     val colorTable = varchar("color", 10).default("")
     val CommandTable = text("command").default("")
+    val LimiterItemTable = text("LimiterItem").default("")
+    val LimiterLocationTable = text("LimiterLocation").default("")
     override val primaryKey = PrimaryKey(playerTable)
 }

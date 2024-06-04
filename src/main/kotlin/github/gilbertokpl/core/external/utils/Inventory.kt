@@ -10,6 +10,11 @@ class Inventory {
         return itemInstance.serialize(items)
     }
 
+    fun serialize(items: ItemStack): String {
+        return itemInstance.serialize(items)
+    }
+
+
     fun deserialize(data: String): ArrayList<ItemStack> {
         return itemInstance.deserialize(data)
     }

@@ -13,83 +13,81 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 
 object Shop {
-    val GLASS_MATERIAL = ItemUtil.item(MaterialUtil["glass"]!!, "§eSHOP", true)
+    private val GLASS_MATERIAL = ItemUtil.item(MaterialUtil["glass"]!!, "§eSHOP", true)
+    private const val ITEMS_PER_PAGE = 27
 
     fun setup() {
-        val inventoryCache: MutableMap<Int, Inventory> = HashMap()
-        val itemCache: MutableMap<Int, String> = HashMap()
+        val inventoryCache = linkedMapOf<Int, Inventory>()
+        val itemCache = linkedMapOf<Int, String>()
+        var currentPage = 1
+        var currentSlot = 0
+        var inventory = createShopInventory(currentPage)
 
+        val sortedShops = ShopData.shopVisits.getMap().asSequence()
+            .sortedByDescending { (_, value) -> value }
 
-        var size = 1
-        var length = 0
-        var inv: Inventory = Bukkit.createInventory(null, 36, "§eSHOP 1")
+        sortedShops.forEach { (shopKey, visits) ->
+            val item = createShopItem(shopKey, visits ?: 0)
+            val cacheValue = (currentSlot + 1) + ((currentPage - 1) * ITEMS_PER_PAGE)
+            itemCache[cacheValue] = shopKey
 
-        val cache = ShopData.shopVisits.getMap().asSequence().sortedByDescending { (_, value) -> value }
+            inventory.setItem(currentSlot, item)
+            currentSlot++
 
-        for (shop in cache) {
-            val name = LangConfig.shopInventoryItemsName.replace("%player%", shop.key)
-            val item = ItemStack(MaterialUtil["head"]!!, 1, SkullType.PLAYER.ordinal.toShort())
-            val meta = item.itemMeta
-
-            item.amount = 1
-            try {
-                ItemUtil.setDisplayName(meta, name)
-            } catch (e : NoSuchMethodError) {
-                meta?.setDisplayName(name)
-            }
-
-            val checkIfIsOpen = ShopData.shopOpen[shop.key] ?: false
-
-            val itemLore = List(LangConfig.shopInventoryItemsLore.size) {
-                LangConfig.shopInventoryItemsLore[it].replace("%visits%", shop.value.toString())
-                    .replace("%open%", if (checkIfIsOpen) LangConfig.shopOpen else LangConfig.shopClosed)
-            }
-
-            if (meta != null) {
-                meta.lore = itemLore
-            }
-
-            item.itemMeta = meta
-
-            val cacheValue = (length + 1) + ((size - 1) * 27)
-            itemCache[cacheValue] = shop.key
-
-            if (length < 26) {
-                inv.setItem(length, item)
-                length += 1
-            } else {
-                inv.setItem(length, item)
-                for (to in 27..35) {
-                    if (to == 27 && size > 1) {
-                        inv.setItem(to, ItemUtil.item(Material.HOPPER, LangConfig.shopInventoryIconBackName, true))
-                        continue
-                    }
-                    if (to == 35) {
-                        inv.setItem(to, ItemUtil.item(Material.ARROW, LangConfig.shopInventoryIconNextName, true))
-                        continue
-                    }
-                    inv.setItem(to, GLASS_MATERIAL)
-                }
-                inventoryCache[size] = inv
-                length = 0
-                size += 1
-                inv = Bukkit.createInventory(null, 36, "§eSHOP $size")
+            if (currentSlot == ITEMS_PER_PAGE) {
+                finalizePage(inventory, currentPage)
+                inventoryCache[currentPage] = inventory
+                currentPage++
+                currentSlot = 0
+                inventory = createShopInventory(currentPage)
             }
         }
-        if (length > 0) {
-            if (size != 1) {
-                inv.setItem(27, ItemUtil.item(Material.HOPPER, LangConfig.shopInventoryIconBackName))
-            } else {
-                inv.setItem(27, GLASS_MATERIAL)
-            }
-            for (to in 28..35) {
-                inv.setItem(to, GLASS_MATERIAL)
-            }
-            inventoryCache[size] = inv
+
+        if (currentSlot > 0) {
+            finalizePage(inventory, currentPage, isLastPage = true)
+            inventoryCache[currentPage] = inventory
         }
 
         Data.shopInventoryCache = Collections.unmodifiableMap(inventoryCache)
         Data.shopItemCache = Collections.unmodifiableMap(itemCache)
+    }
 
+    private fun createShopItem(shopKey: String, visits: Int): ItemStack {
+        val name = LangConfig.shopInventoryItemsName.replace("%player%", shopKey)
+        val item = ItemStack(MaterialUtil["head"]!!, 1, SkullType.PLAYER.ordinal.toShort())
+        val meta = item.itemMeta
+
+        ItemUtil.setDisplayName(meta, name)
+
+        val isOpen = ShopData.shopOpen[shopKey] ?: false
+        meta?.lore = LangConfig.shopInventoryItemsLore.map {
+            it.replace("%visits%", visits.toString())
+                .replace("%open%", if (isOpen) LangConfig.shopOpen else LangConfig.shopClosed)
+        }
+        item.itemMeta = meta
+
+        return item
+    }
+
+    private fun finalizePage(inventory: Inventory, currentPage: Int, isLastPage: Boolean = false) {
+        inventory.setItem(27, if (currentPage > 1) {
+            ItemUtil.item(Material.HOPPER, LangConfig.shopInventoryIconBackName, true)
+        } else {
+            GLASS_MATERIAL
+        })
+
+        for (i in 28..34) {
+            inventory.setItem(i, GLASS_MATERIAL)
+        }
+
+        inventory.setItem(35, if (isLastPage) {
+            GLASS_MATERIAL
+        } else {
+            ItemUtil.item(Material.ARROW, LangConfig.shopInventoryIconNextName, true)
+        })
+    }
+
+    private fun createShopInventory(page: Int): Inventory {
+        return Bukkit.createInventory(null, 36, "§eSHOP $page")
     }
 }

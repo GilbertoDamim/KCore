@@ -19,47 +19,33 @@ import java.util.*
 internal object Kit {
 
     private val GLASS_MATERIAL = ItemUtil.item(MaterialUtil["glass"]!!, "§eKIT", true)
+    private const val ITEMS_PER_PAGE = 27
 
     fun setup() {
-
-        val inventoryCache: MutableMap<Int, Inventory> = HashMap()
-        val itemCache: MutableMap<Int, String> = HashMap()
+        val inventoryCache = mutableMapOf<Int, Inventory>()
+        val itemCache = mutableMapOf<Int, String>()
 
         var currentPage = 1
         var currentSlot = 0
         var inventory = createKitsInventory(currentPage)
 
-        val sortedKits = kitWeight.getMap().toList().sortedBy { (_, value) -> value }.reversed().toMap()
+        val sortedKits = kitWeight.getMap()
+            .toList()
+            .sortedByDescending { (_, value) -> value }
+            .toMap()
 
-        for (kit in sortedKits) {
-            val kitName = kitFakeName[kit.key]?.takeIf { it.isNotEmpty() } ?: kit.key
+        sortedKits.forEach { (kitKey, _) ->
+            val kitName = kitFakeName[kitKey]?.takeIf { it.isNotEmpty() } ?: kitKey
+            val item = createKitItem(kitKey, kitName)
 
-            val itemName = LangConfig.kitsInventoryItemsName.replace("%kitrealname%", kitName)
-            val item = ItemStack(KitsData.kitItems[kit.key]?.getOrNull(0) ?: ItemStack(Material.CHEST))
-
-            val meta = item.itemMeta
-            item.amount = 1
-            try {
-                ItemUtil.setDisplayName(meta, itemName)
-            } catch (e : NoSuchMethodError) {
-                meta?.setDisplayName(itemName)
-            }
-            if (meta != null) {
-                meta.lore = LangConfig.kitsInventoryItemsLore.map { it.replace("%realname%", kit.key) }
-            }
-            item.itemMeta = meta
-
-            val cacheValue = currentSlot + 1 + (27 * (currentPage - 1))
-            itemCache[cacheValue] = kit.key
+            val cacheValue = currentSlot + 1 + (ITEMS_PER_PAGE * (currentPage - 1))
+            itemCache[cacheValue] = kitKey
 
             inventory.setItem(currentSlot, item)
             currentSlot++
-            if (currentSlot == 27) {
-                inventory.setItem(27, createBackItem(currentPage))
-                for (i in 28..34) {
-                    inventory.setItem(i, GLASS_MATERIAL)
-                }
-                inventory.setItem(35, createNextItem(currentPage, sortedKits.size))
+
+            if (currentSlot == ITEMS_PER_PAGE) {
+                finalizePage(inventory, currentPage, sortedKits.size)
                 inventoryCache[currentPage] = inventory
                 currentPage++
                 currentSlot = 0
@@ -68,90 +54,77 @@ internal object Kit {
         }
 
         if (currentSlot > 0) {
-            inventory.setItem(27, if (currentPage > 1) createBackItem(currentPage) else GLASS_MATERIAL)
-            for (i in 28..35) {
-                inventory.setItem(i, GLASS_MATERIAL)
-            }
+            finalizePage(inventory, currentPage, sortedKits.size, true)
             inventoryCache[currentPage] = inventory
         }
 
         kitItemCache = Collections.unmodifiableMap(itemCache)
         kitInventoryCache = Collections.unmodifiableMap(inventoryCache)
+    }
 
+    private fun createKitItem(kitKey: String, kitName: String): ItemStack {
+        val item = ItemStack(KitsData.kitItems[kitKey]?.getOrNull(0) ?: ItemStack(Material.CHEST))
+        val meta = item.itemMeta
+
+        val itemName = LangConfig.kitsInventoryItemsName.replace("%kitrealname%", kitName)
+        ItemUtil.setDisplayName(meta, itemName)
+
+        meta?.lore = LangConfig.kitsInventoryItemsLore.map { it.replace("%realname%", kitKey) }
+        item.itemMeta = meta
+        return item
+    }
+
+    private fun finalizePage(inventory: Inventory, currentPage: Int, totalKits: Int, isLastPage: Boolean = false) {
+        inventory.setItem(27, createBackItem(currentPage))
+        for (i in 28..34) {
+            inventory.setItem(i, GLASS_MATERIAL)
+        }
+        inventory.setItem(35, if (isLastPage) GLASS_MATERIAL else createNextItem(currentPage, totalKits))
     }
 
     fun openKitInventory(kit: String, guiNumber: String, player: Player) {
-        val inventory =
-            github.gilbertokpl.total.TotalEssentialsJava.instance.server.createInventory(
-                null,
-                45,
-                "§eKit $kit $guiNumber"
-            )
-        var timeAll = PlayerData.kitsCache[player]?.get(kit) ?: 0L
-        timeAll += KitsData.kitTime[kit] ?: 0L
-        KitsData.kitItems[kit]?.forEach { inventory.addItem(it) }
+        val inventory = github.gilbertokpl.total.TotalEssentialsJava.instance.server.createInventory(
+            null, 45, "§eKit $kit $guiNumber"
+        )
+        val kitItems = KitsData.kitItems[kit] ?: emptyList()
+        kitItems.forEach { inventory.addItem(it) }
+
+        val timeAll = (PlayerData.kitsCache[player]?.get(kit) ?: 0L) + (KitsData.kitTime[kit] ?: 0L)
+
         for (i in 36..44) {
-            when (i) {
-                36 -> setInventoryItem(i, Material.HOPPER, LangConfig.kitsInventoryIconBackName, inventory)
-                40 -> {
-                    if (player.hasPermission("totalessentials.commands.editkit")) {
-                        setInventoryItem(i, Material.CHEST, LangConfig.kitsInventoryIconEditKitName, inventory)
-                    } else {
-                        GLASS_MATERIAL
-                    }
-                }
-
-                44 -> {
-                    if (player.hasPermission("totalessentials.commands.kit.$kit")) {
-                        if (timeAll <= System.currentTimeMillis() || timeAll == 0L || player.hasPermission("totalessentials.bypass.kitcatch")) {
-                            setInventoryItem(i, Material.ARROW, LangConfig.kitsGetIcon, inventory)
-                        } else {
-                            val array = arrayOfNulls<String>(LangConfig.kitsGetIconLoreTime.size)
-                            val remainingTime = timeAll - System.currentTimeMillis()
-                            for (j in LangConfig.kitsGetIconLoreTime.indices) {
-                                array[j] = LangConfig.kitsGetIconLoreTime[j].replace(
-                                    "%time%",
-                                    github.gilbertokpl.total.TotalEssentialsJava.basePlugin.getTime()
-                                        .convertMillisToString(remainingTime, MainConfig.kitsUseShortTime)
-                                )
-                            }
-                            setInventoryItem(
-                                i,
-                                Material.ARROW,
-                                LangConfig.kitsGetIconNotCatch,
-                                array.toList().requireNoNulls(),
-                                inventory
-                            )
-                        }
-                    } else {
-                        setInventoryItem(
-                            i,
-                            Material.ARROW,
-                            LangConfig.kitsGetIconNotCatch,
-                            LangConfig.kitsGetIconLoreNotPerm,
-                            inventory
-                        )
-                    }
-                }
-
-                else -> inventory.setItem(i, GLASS_MATERIAL)
-            }
+            inventory.setItem(i, createSpecialItem(i, kit, player, timeAll))
         }
+
         player.openInventory(inventory)
     }
 
-    private fun setInventoryItem(slot: Int, material: Material, name: String, inventory: Inventory) {
-        inventory.setItem(slot, ItemUtil.item(material, name, true))
+    private fun createSpecialItem(slot: Int, kit: String, player: Player, timeAll: Long): ItemStack {
+        return when (slot) {
+            36 -> ItemUtil.item(Material.HOPPER, LangConfig.kitsInventoryIconBackName, true)
+            40 -> if (player.hasPermission("totalessentials.commands.editkit")) {
+                ItemUtil.item(Material.CHEST, LangConfig.kitsInventoryIconEditKitName, true)
+            } else {
+                GLASS_MATERIAL
+            }
+            44 -> createGetItem(slot, kit, player, timeAll)
+            else -> GLASS_MATERIAL
+        }
     }
 
-    private fun setInventoryItem(
-        slot: Int,
-        material: Material,
-        name: String,
-        lore: List<String>,
-        inventory: Inventory
-    ) {
-        inventory.setItem(slot, ItemUtil.item(material, name, lore, true))
+    private fun createGetItem(slot: Int, kit: String, player: Player, timeAll: Long): ItemStack {
+        return if (player.hasPermission("totalessentials.commands.kit.$kit")) {
+            if (timeAll <= System.currentTimeMillis() || timeAll == 0L || player.hasPermission("totalessentials.bypass.kitcatch")) {
+                ItemUtil.item(Material.ARROW, LangConfig.kitsGetIcon, true)
+            } else {
+                val remainingTime = timeAll - System.currentTimeMillis()
+                val lore = LangConfig.kitsGetIconLoreTime.map {
+                    it.replace("%time%", github.gilbertokpl.total.TotalEssentialsJava.basePlugin.getTime().convertMillisToString(remainingTime, MainConfig.kitsUseShortTime))
+                }
+                ItemUtil.item(Material.ARROW, LangConfig.kitsGetIconNotCatch, lore, true)
+            }
+        } else {
+            ItemUtil.item(Material.ARROW, LangConfig.kitsGetIconNotCatch, LangConfig.kitsGetIconLoreNotPerm, true)
+        }
     }
 
     private fun createKitsInventory(page: Int): Inventory {
@@ -167,7 +140,7 @@ internal object Kit {
     }
 
     private fun createNextItem(currentPage: Int, totalKits: Int): ItemStack {
-        return if (currentPage * 27 < totalKits) {
+        return if (currentPage * ITEMS_PER_PAGE < totalKits) {
             ItemUtil.item(Material.ARROW, LangConfig.kitsInventoryIconNextName, true)
         } else {
             GLASS_MATERIAL

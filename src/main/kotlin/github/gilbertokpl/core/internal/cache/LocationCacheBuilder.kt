@@ -5,6 +5,8 @@ import github.gilbertokpl.core.external.cache.interfaces.CacheBuilder
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import java.util.concurrent.ConcurrentHashMap
 
 internal class LocationCacheBuilder(
     private val table: Table,
@@ -13,20 +15,14 @@ internal class LocationCacheBuilder(
     private val classConvert: SerializerBase<Location?, String>
 ) : CacheBuilder<Location?> {
 
-    private val hashMap = HashMap<String, Location?>()
-    private val toUpdate = mutableListOf<String>()
+    private val hashMap = ConcurrentHashMap<String, Location?>()
+    @Volatile private var toUpdate = mutableSetOf<String>()
 
-    override fun getMap(): Map<String, Location?> {
-        return hashMap.toMap()
-    }
+    override fun getMap(): Map<String, Location?> = hashMap.toMap()
 
-    override operator fun get(entity: String): Location? {
-        return hashMap[entity.lowercase()]
-    }
+    override operator fun get(entity: String): Location? = hashMap[entity.lowercase()]
 
-    override operator fun get(entity: Player): Location? {
-        return hashMap[entity.name.lowercase()]
-    }
+    override operator fun get(entity: Player): Location? = get(entity.name)
 
     override operator fun set(entity: Player, value: Location?) {
         set(entity.name, value)
@@ -51,45 +47,43 @@ internal class LocationCacheBuilder(
     }
 
     override fun update() {
-        save(toUpdate.toList())
+        save(toUpdate)
     }
 
-    private fun save(list: List<String>) {
-        val currentHash = hashMap
-
-        for (i in list) {
-            toUpdate.remove(i)
-            val tab = table.select { primaryColumn eq i }
-            val value = currentHash[i]
-
-            if (tab.empty()) {
-                if (value == null) continue
-                table.insert {
-                    it[primaryColumn] = i
-                    it[column] = classConvert.convertToDatabase(value)
+    private fun save(list: Set<String>) {
+        list.forEach { entity ->
+            val value = hashMap[entity]
+            val existingRecord = table.selectAll().where { primaryColumn eq entity }.singleOrNull()
+            when {
+                existingRecord == null && value != null -> {
+                    table.insert {
+                        it[primaryColumn] = entity
+                        it[column] = classConvert.convertToDatabase(value)
+                    }
                 }
-            } else {
-                if (value == null) {
-                    table.update({ primaryColumn eq i }) {
+                existingRecord != null && value == null -> {
+                    table.update({ primaryColumn eq entity }) {
                         it[column] = ""
                     }
-                    continue
                 }
-                table.update({ primaryColumn eq i }) {
-                    it[column] = classConvert.convertToDatabase(value)
+                existingRecord != null && value != null -> {
+                    table.update({ primaryColumn eq entity }) {
+                        it[column] = classConvert.convertToDatabase(value)
+                    }
                 }
             }
         }
+        toUpdate.removeAll(list)
     }
 
     override fun load() {
-        for (i in table.selectAll()) {
-            val location = classConvert.convertToCache(i[column]) ?: continue
-            hashMap[i[primaryColumn]] = location
+        table.selectAll().forEach {
+            val location = classConvert.convertToCache(it[column]) ?: return@forEach
+            hashMap[it[primaryColumn]] = location
         }
     }
 
     override fun unload() {
-        save(toUpdate.toList())
+        save(toUpdate)
     }
 }

@@ -14,59 +14,43 @@ internal object EditKit {
     private const val EDIT_KIT_INVENTORY_SIZE = 27
     private const val EDIT_KIT_ITEMS_INVENTORY_SIZE = 36
 
-    private val CHEST_ITEM = ItemUtil.item(
-        Material.CHEST,
-        LangConfig.kitsEditKitInventoryItemsName,
-        LangConfig.kitsEditKitInventoryItemsLore
-    )
-
-    private val CLOCK_ITEM = ItemUtil.item(
-        MaterialUtil["clock"] ?: Material.CLOCK,
-        LangConfig.kitsEditKitInventoryTimeName,
-        LangConfig.kitsEditKitInventoryTimeLore
-    )
-
-    private val BOOK_ITEM = ItemUtil.item(
-        Material.BOOK,
-        LangConfig.kitsEditKitInventoryNameName,
-        LangConfig.kitsEditKitInventoryNameLore
-    )
-
-    private val FEATHER_ITEM = ItemUtil.item(
-        MaterialUtil["feather"] ?: Material.FEATHER,
-        LangConfig.kitsEditKitInventoryWeightName,
-        LangConfig.kitsEditKitInventoryWeightLore
-    )
-
+    private val CHEST_ITEM = createItem(Material.CHEST, LangConfig.kitsEditKitInventoryItemsName, LangConfig.kitsEditKitInventoryItemsLore)
+    private val CLOCK_ITEM = createItem(MaterialUtil["clock"] ?: Material.CLOCK, LangConfig.kitsEditKitInventoryTimeName, LangConfig.kitsEditKitInventoryTimeLore)
+    private val BOOK_ITEM = createItem(Material.BOOK, LangConfig.kitsEditKitInventoryNameName, LangConfig.kitsEditKitInventoryNameLore)
+    private val FEATHER_ITEM = createItem(MaterialUtil["feather"] ?: Material.FEATHER, LangConfig.kitsEditKitInventoryWeightName, LangConfig.kitsEditKitInventoryWeightLore)
     private val GLASS_ITEM = ItemUtil.item(MaterialUtil["glass"] ?: Material.GLASS, "", true)
 
+    private fun createItem(material: Material, name: String, lore: List<String>): ItemStack {
+        return ItemUtil.item(material, name, lore)
+    }
+
     fun setup() {
-        for (slot in 0 until EDIT_KIT_INVENTORY_SIZE) {
-            Data.editKitItemCache[slot] = when (slot) {
+        Data.editKitItemCache = (0 until EDIT_KIT_INVENTORY_SIZE).associateWith { slot ->
+            when (slot) {
                 10 -> CHEST_ITEM
                 12 -> CLOCK_ITEM
                 14 -> BOOK_ITEM
                 16 -> FEATHER_ITEM
                 else -> GLASS_ITEM
             }
-        }
+        }.toMutableMap()
     }
 
-    fun editKitGui(p: Player, kit: String) {
-        val inv: Inventory = github.gilbertokpl.total.TotalEssentialsJava.instance.server
+    fun editKitGui(player: Player, kit: String) {
+        val inventory = github.gilbertokpl.total.TotalEssentialsJava.instance.server
             .createInventory(null, EDIT_KIT_INVENTORY_SIZE, "§eEditKit $kit")
         Data.editKitItemCache.forEach { (slot, item) ->
-            inv.setItem(slot, item)
+            inventory.setItem(slot, item)
         }
-        p.openInventory(inv)
+        player.openInventory(inventory)
     }
 
-    fun editKitGuiItems(p: Player, kit: String, items: List<ItemStack>) {
-        val inv: Inventory = github.gilbertokpl.total.TotalEssentialsJava.instance.server
+    fun editKitGuiItems(player: Player, kit: String, items: List<ItemStack>) {
+        val inventory = github.gilbertokpl.total.TotalEssentialsJava.instance.server
             .createInventory(null, EDIT_KIT_ITEMS_INVENTORY_SIZE, kit)
         items.forEach { item ->
-            inv.addItem(item)
+            inventory.addItem(item)
         }
-        p.openInventory(inv)
+        player.openInventory(inventory)
     }
 }

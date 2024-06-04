@@ -5,6 +5,7 @@ import github.gilbertokpl.core.external.cache.interfaces.CacheBuilderV2
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import java.util.concurrent.ConcurrentHashMap
 
 internal class HashMapCacheBuilder<T, V, K>(
     private val table: Table,
@@ -13,20 +14,14 @@ internal class HashMapCacheBuilder<T, V, K>(
     private val classConvert: SerializerBase<HashMap<V, K>, T>
 ) : CacheBuilderV2<HashMap<V, K>, V> {
 
-    private val hashMap = HashMap<String, HashMap<V, K>?>()
-    private val toUpdate = mutableListOf<String>()
+    private val hashMap = ConcurrentHashMap<String, HashMap<V, K>?>()
+    @Volatile private var toUpdate = mutableSetOf<String>()
 
-    override fun getMap(): Map<String, HashMap<V, K>?> {
-        return hashMap.toMap()
-    }
+    override fun getMap(): Map<String, HashMap<V, K>?> = hashMap.toMap()
 
-    override operator fun get(entity: String): HashMap<V, K>? {
-        return hashMap[entity.lowercase()]
-    }
+    override operator fun get(entity: String): HashMap<V, K>? = hashMap[entity.lowercase()]
 
-    override operator fun get(entity: Player): HashMap<V, K>? {
-        return hashMap[entity.name.lowercase()]
-    }
+    override operator fun get(entity: Player): HashMap<V, K>? = get(entity.name)
 
     override operator fun set(entity: Player, value: HashMap<V, K>) {
         set(entity.name, value)
@@ -38,13 +33,12 @@ internal class HashMapCacheBuilder<T, V, K>(
         } else {
             set(entity, value)
         }
+        toUpdate.add(entity.lowercase())
     }
 
     override operator fun set(entity: String, value: HashMap<V, K>) {
-        val ent = hashMap[entity.lowercase()] ?: HashMap()
-        ent.putAll(value)
-        hashMap[entity.lowercase()] = ent
-        toUpdate += entity.lowercase()
+        hashMap.merge(entity.lowercase(), value) { old, new -> old.apply { putAll(new) } }
+        toUpdate.add(entity.lowercase())
     }
 
     override fun remove(entity: Player, value: V) {
@@ -52,58 +46,56 @@ internal class HashMapCacheBuilder<T, V, K>(
     }
 
     override fun remove(entity: String, value: V) {
-        val ent = hashMap[entity.lowercase()] ?: return
-        ent.remove(value)
-        hashMap[entity.lowercase()] = ent
-        toUpdate += entity.lowercase()
+        hashMap[entity.lowercase()]?.apply {
+            remove(value)
+            toUpdate.add(entity.lowercase())
+        }
     }
 
     override fun remove(entity: Player) {
-        remove(entity.name.lowercase())
+        remove(entity.name)
     }
 
     override fun remove(entity: String) {
         hashMap[entity.lowercase()] = null
-        toUpdate += entity.lowercase()
+        toUpdate.add(entity.lowercase())
     }
 
-    private fun save(list: List<String>) {
-        val currentHash = hashMap
-
-        for (i in list) {
-            toUpdate.remove(i)
-            val tab = table.select { primaryColumn eq i }
-            val value = currentHash[i]
-
-            if (tab.empty()) {
-                if (value == null) continue
-                table.insert {
-                    it[primaryColumn] = i
-                    it[column] = classConvert.convertToDatabase(value)
+    private fun save(list: Set<String>) {
+        list.forEach { entity ->
+            val value = hashMap[entity]
+            val existingRecord = table.selectAll().where { primaryColumn eq entity }.singleOrNull()
+            when {
+                existingRecord == null && value != null -> {
+                    table.insert {
+                        it[primaryColumn] = entity
+                        it[column] = classConvert.convertToDatabase(value)
+                    }
                 }
-            } else {
-                if (value == null) {
-                    table.deleteWhere { primaryColumn eq i }
-                    continue
+                existingRecord != null && value == null -> {
+                    table.deleteWhere { primaryColumn eq entity }
                 }
-                table.update({ primaryColumn eq i }) {
-                    it[column] = classConvert.convertToDatabase(value)
+                existingRecord != null && value != null -> {
+                    table.update({ primaryColumn eq entity }) {
+                        it[column] = classConvert.convertToDatabase(value)
+                    }
                 }
             }
         }
+        toUpdate.removeAll(list)
     }
 
     override fun update() {
-        save(toUpdate.toList())
+        save(toUpdate)
     }
 
     override fun load() {
-        for (i in table.selectAll()) {
-            hashMap[i[primaryColumn]] = classConvert.convertToCache(i[column]) ?: HashMap()
+        table.selectAll().forEach {
+            hashMap[it[primaryColumn]] = classConvert.convertToCache(it[column]) ?: HashMap()
         }
     }
 
     override fun unload() {
-        save(toUpdate.toList())
+        save(toUpdate)
     }
 }

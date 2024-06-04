@@ -3,6 +3,7 @@ package github.gilbertokpl.total.listeners
 import github.gilbertokpl.total.cache.internal.Data
 import github.gilbertokpl.total.cache.internal.inventory.Kit
 import github.gilbertokpl.total.cache.local.KitsData
+import github.gilbertokpl.total.cache.local.test.LimitData
 import github.gilbertokpl.total.cache.local.PlayerData
 import github.gilbertokpl.total.cache.local.VipData
 import github.gilbertokpl.total.config.files.LangConfig
@@ -39,8 +40,34 @@ class InventoryClose : Listener {
                 e.printStackTrace()
             }
         }
+
+        if (MainConfig.limitActivated) {
+            try {
+                limitInventoryCloseEvent(e)
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
     }
 
+    //limit
+
+    private fun limitInventoryCloseEvent(e: InventoryCloseEvent): Boolean {
+        val p = e.player as Player
+        Data.playerVipEdit[p].also {
+            if (it == null) return false
+
+            val array = ArrayList<ItemStack>()
+
+            for (i in e.inventory.contents.filterNotNull()) {
+                array.add(i)
+            }
+
+            LimitData.limitItems[it, array] = true
+
+        }
+        return true
+    }
     //vips
     private fun vipInventoryCloseEvent(e: InventoryCloseEvent): Boolean {
         val p = e.player as Player

@@ -3,7 +3,6 @@ package github.gilbertokpl.total.cache.internal
 import github.gilbertokpl.total.config.files.LangConfig
 import github.gilbertokpl.total.util.TaskUtil
 import org.bukkit.entity.Player
-import org.bukkit.scheduler.BukkitRunnable
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
@@ -26,36 +25,25 @@ internal data class DataTeleport(
         }
 
         fun checkOtherTpa(p: Player): Boolean {
-            for (i in tpaData) {
-                if (i.value.otherPlayer == p) {
-                    return true
-                }
-            }
-            return false
+            return tpaData.values.any { it.otherPlayer == p }
         }
 
         fun getTpa(p: Player): Player? {
-            for (i in tpaData) {
-                if (i.value.otherPlayer == p) {
-                    return i.key
-                }
-            }
-            return null
+            return tpaData.entries.find { it.value.otherPlayer == p }?.key
         }
 
         fun createNewTpa(pSender: Player, pReceived: Player, time: Int) {
-
-            tpaData[pSender] = DataTeleport(pSender, pReceived, true)
+            val dataTeleport = DataTeleport(pSender, pReceived, true)
+            tpaData[pSender] = dataTeleport
 
             CompletableFuture.runAsync({
                 TimeUnit.SECONDS.sleep(time.toLong())
-                try {
-                    val sender = tpaData[pSender] ?: return@runAsync
-                    if (sender.wait) {
+                val sender = tpaData[pSender]
+                if (sender?.wait == true) {
+                    try {
                         github.gilbertokpl.total.TotalEssentialsJava.instance.server.scheduler.runTask(
                             github.gilbertokpl.total.TotalEssentialsJava.instance
-                        ) {
-                            BukkitRunnable ->
+                        ) { BukkitRunnable ->
                             pSender.sendMessage(
                                 LangConfig.tpaRequestOtherDenyTime.replace(
                                     "%player%",
@@ -63,13 +51,11 @@ internal data class DataTeleport(
                                 )
                             )
                         }
+                    } finally {
                         tpaData.remove(pSender)
                     }
-                } catch (ex: Exception) {
-                    tpaData.remove(pSender)
                 }
             }, TaskUtil.getInternalExecutor())
         }
-
     }
 }

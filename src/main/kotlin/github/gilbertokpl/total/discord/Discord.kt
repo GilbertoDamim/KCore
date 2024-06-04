@@ -15,6 +15,7 @@ import net.dv8tion.jda.api.exceptions.ContextException
 import net.dv8tion.jda.api.exceptions.ErrorResponseException
 import net.dv8tion.jda.api.requests.GatewayIntent
 import net.dv8tion.jda.api.utils.cache.CacheFlag
+import net.dv8tion.jda.internal.utils.JDALogger
 import org.bukkit.Bukkit
 import java.awt.Color
 import javax.security.auth.login.LoginException

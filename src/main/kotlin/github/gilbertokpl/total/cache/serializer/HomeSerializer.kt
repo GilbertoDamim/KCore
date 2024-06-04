@@ -6,23 +6,17 @@ import org.bukkit.Location
 internal class HomeSerializer : SerializerBase<HashMap<String, Location>, String> {
 
     private val locationSerializer = LocationSerializer()
+
     override fun convertToDatabase(hash: HashMap<String, Location>): String {
-        var string = ""
-        for (i in hash) {
-            val toString = "${i.key},${locationSerializer.convertToDatabase(i.value)}"
-            string += if (string == "") {
-                toString
-            } else {
-                "|$toString"
-            }
+        return hash.entries.joinToString("|") { (key, value) ->
+            "$key,${locationSerializer.convertToDatabase(value)}"
         }
-        return string
     }
 
     override fun convertToCache(value: String): HashMap<String, Location> {
         val hash = HashMap<String, Location>()
-        for (i in value.split("|")) {
-            val split = i.split(",")
+        for (entryString in value.split("|")) {
+            val split = entryString.split(",")
             if (split.size < 2) continue
             hash[split[0]] = locationSerializer.convertToCache(split[1]) ?: continue
         }

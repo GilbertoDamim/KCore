@@ -24,22 +24,15 @@ class ItemSerializer {
             try {
                 for (i in items) {
                     val data = FCItemBuilder(i)
-
                     var itemConfig = ""
-
                     for (configs in data.toDataPart()) {
-                        if (itemConfig == "") {
-                            itemConfig = configs.replace(",", "+").replace("|", "-")
+                        itemConfig += if (itemConfig.isEmpty()) {
+                            configs.replace(",", "+").replace("|", "-")
                         } else {
-                            itemConfig += "|" + configs.replace(",", "+").replace("|", "-")
+                            "|${configs.replace(",", "+").replace("|", "-")}"
                         }
                     }
-
-                    if (toReturn == "") {
-                        toReturn = itemConfig
-                    } else {
-                        toReturn += ",$itemConfig"
-                    }
+                    toReturn += if (toReturn.isEmpty()) itemConfig else ",$itemConfig"
                 }
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -55,25 +48,54 @@ class ItemSerializer {
                 InternalBukkitObjectOutputStream(outputStream)
             }
             dataOutput.writeInt(items.size)
-            for (i in items.indices) {
-                dataOutput.writeObject(items[i])
+            for (i in items) {
+                dataOutput.writeObject(i)
             }
             dataOutput.close()
             toReturn = Base64Coder.encodeLines(outputStream.toByteArray())
-        } catch (ignored: Throwable) {
-        }
+        } catch (ignored: Throwable) { }
         return toReturn
     }
 
-    fun deserialize(data: String): ArrayList<ItemStack> {
-        if (data == "") return ArrayList()
+    fun serialize(item: ItemStack): String {
 
-        val toReturn: ArrayList<ItemStack> = ArrayList()
+        if (MainConfig.generalCustomItemStack) {
+                    val data = FCItemBuilder(item)
+                    var itemConfig = ""
+                    for (configs in data.toDataPart()) {
+                        itemConfig += if (itemConfig.isEmpty()) {
+                            configs.replace(",", "+").replace("|", "-")
+                        } else {
+                            "|${configs.replace(",", "+").replace("|", "-")}"
+                        }
+                    }
+            return itemConfig
+        }
+
+        try {
+            val outputStream = ByteArrayOutputStream()
+            val dataOutput = try {
+                BukkitObjectOutputStream(outputStream)
+            } catch (e: NoClassDefFoundError) {
+                InternalBukkitObjectOutputStream(outputStream)
+            }
+            dataOutput.writeInt(1)
+            dataOutput.writeObject(item)
+            dataOutput.close()
+            return Base64Coder.encodeLines(outputStream.toByteArray())
+        } catch (ignored: Throwable) {
+            return ""
+        }
+    }
+
+    fun deserialize(data: String): ArrayList<ItemStack> {
+        if (data.isEmpty()) return ArrayList()
+
+        val toReturn = ArrayList<ItemStack>()
 
         if (MainConfig.generalCustomItemStack) {
             try {
                 val dataValue = data.split(",")
-
                 for (item in dataValue) {
                     try {
                         val itemData = item.split("|")
@@ -103,11 +125,10 @@ class ItemSerializer {
                 items[i] = dataInput.readObject() as ItemStack?
             }
             dataInput.close()
-            for (i in items.filterNotNull()) {
-                toReturn.add(i)
-            }
-        } catch (ignored: Throwable) {
-        }
+            toReturn.addAll(items.filterNotNull())
+        } catch (ignored: Throwable) { }
         return toReturn
     }
+
+
 }

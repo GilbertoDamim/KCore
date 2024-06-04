@@ -8,30 +8,26 @@ internal object PermissionUtil {
 
     fun getNumberPermission(player: Player, permission: String, default: Int): Int {
         var newAmount = 0
-        //lower versions
+
         if (lowVersion) {
             for (i in 0..MAX_HOME_VALUE) {
                 if (player.hasPermission(permission + i) && newAmount <= i) {
                     newAmount = i
                 }
             }
-            return if (newAmount == 0) {
-                default
-            } else {
-                newAmount
-            }
+        } else {
+            player.effectivePermissions
+                .filter { it.permission.contains(permission) }
+                .forEach {
+                    val int = try {
+                        it.permission.split(".").last().toInt()
+                    } catch (e: NumberFormatException) {
+                        0
+                    }
+                    newAmount = maxOf(newAmount, int)
+                }
         }
 
-        player.effectivePermissions.filter { it.permission.contains(permission) }.forEach {
-            val int = try {
-                it.permission.split(".").last().toInt()
-            } catch (e: Throwable) {
-                0
-            }
-            if (newAmount <= int) {
-                newAmount = int
-            }
-        }
         return if (newAmount == 0) {
             default
         } else {

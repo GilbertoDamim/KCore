@@ -11,69 +11,53 @@ import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-class Cache(core: CorePlugin) {
-    private val corePlugin = core
+class Cache(private val corePlugin: CorePlugin) {
+
+    val toByteUpdate = CopyOnWriteArrayList<CacheBuilder<*>>()
 
     fun stop() {
         transaction(corePlugin.sql) {
-            for (i in toByteUpdate) {
-                i.unload()
-            }
+            toByteUpdate.forEach(CacheBuilder<*>::unload)
         }
     }
 
-    fun simpleBoolean(): CacheBuilder<Boolean> {
-        return SimpleCacheBuilder()
-    }
+    fun simpleBoolean(): CacheBuilder<Boolean> = SimpleCacheBuilder()
 
-    fun simpleInteger(): CacheBuilder<Int> {
-        return SimpleCacheBuilder()
-    }
+    fun simpleInteger(): CacheBuilder<Int> = SimpleCacheBuilder()
 
-    fun simpleLong(): CacheBuilder<Long> {
-        return SimpleCacheBuilder()
-    }
+    fun simpleLong(): CacheBuilder<Long> = SimpleCacheBuilder()
 
-    fun simplePlayer(): CacheBuilder<Player?> {
-        return SimpleCacheBuilder()
-    }
+    fun simplePlayer(): CacheBuilder<Player?> = SimpleCacheBuilder()
 
-    fun <T> simpleList(): CacheBuilder<List<T>> {
-        return SimpleCacheBuilder()
-    }
+    fun <T> simpleList(): CacheBuilder<List<T>> = SimpleCacheBuilder()
 
-    fun string(cacheBase: CacheBase, column: Column<String>): CacheBuilder<String> {
+    private fun <T> createCacheBuilder(
+        cacheBase: CacheBase,
+        column: Column<T>
+    ): ByteCacheBuilder<T> {
         val instance = ByteCacheBuilder(cacheBase.table, cacheBase.primaryColumn, column)
         toByteUpdate.add(instance)
         return instance
     }
 
-    fun boolean(cacheBase: CacheBase, column: Column<Boolean>): CacheBuilder<Boolean> {
-        val instance = ByteCacheBuilder(cacheBase.table, cacheBase.primaryColumn, column)
-        toByteUpdate.add(instance)
-        return instance
-    }
+    fun string(cacheBase: CacheBase, column: Column<String>): CacheBuilder<String> =
+        createCacheBuilder(cacheBase, column)
 
-    fun integer(cacheBase: CacheBase, column: Column<Int>): CacheBuilder<Int> {
-        val instance = ByteCacheBuilder(cacheBase.table, cacheBase.primaryColumn, column)
-        toByteUpdate.add(instance)
-        return instance
-    }
+    fun boolean(cacheBase: CacheBase, column: Column<Boolean>): CacheBuilder<Boolean> =
+        createCacheBuilder(cacheBase, column)
 
-    fun double(cacheBase: CacheBase, column: Column<Double>): CacheBuilder<Double> {
-        val instance = ByteCacheBuilder(cacheBase.table, cacheBase.primaryColumn, column)
-        toByteUpdate.add(instance)
-        return instance
-    }
+    fun integer(cacheBase: CacheBase, column: Column<Int>): CacheBuilder<Int> =
+        createCacheBuilder(cacheBase, column)
 
-    fun long(cacheBase: CacheBase, column: Column<Long>): CacheBuilder<Long> {
-        val instance = ByteCacheBuilder(cacheBase.table, cacheBase.primaryColumn, column)
-        toByteUpdate.add(instance)
-        return instance
-    }
+    fun double(cacheBase: CacheBase, column: Column<Double>): CacheBuilder<Double> =
+        createCacheBuilder(cacheBase, column)
+
+    fun long(cacheBase: CacheBase, column: Column<Long>): CacheBuilder<Long> =
+        createCacheBuilder(cacheBase, column)
 
     fun location(
         cacheBase: CacheBase,
@@ -115,27 +99,22 @@ class Cache(core: CorePlugin) {
         return instance
     }
 
-
     fun start(cachePackage: String) {
         corePlugin.getReflection().getClasses(cachePackage)
         transaction(corePlugin.sql) {
-            for (i in toByteUpdate) {
-                i.load()
-            }
+            toByteUpdate.forEach(CacheBuilder<*>::load)
         }
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay({
             save()
         }, 5, 5, TimeUnit.MINUTES)
     }
 
-    val toByteUpdate = ArrayList<CacheBuilder<*>>()
-
     fun save() {
         try {
             transaction(corePlugin.sql) {
-                for (i in toByteUpdate) {
+                toByteUpdate.forEach {
                     try {
-                        i.update()
+                        it.update()
                     } catch (e: Exception) {
                         Bukkit.getServer().shutdown()
                         e.printStackTrace()
@@ -147,5 +126,4 @@ class Cache(core: CorePlugin) {
             e.printStackTrace()
         }
     }
-
 }

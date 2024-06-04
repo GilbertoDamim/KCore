@@ -10,6 +10,7 @@ import github.gilbertokpl.total.config.files.LangConfig;
 import github.gilbertokpl.total.config.files.MainConfig;
 import github.gilbertokpl.total.discord.Discord;
 import github.gilbertokpl.total.util.*;
+import net.dv8tion.jda.internal.utils.JDALogger;
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.permission.Permission;
 import org.bukkit.Bukkit;
@@ -58,6 +59,8 @@ public class TotalEssentialsJava extends JavaPlugin {
 
     public static String jarPath = null;
 
+    public static Boolean publicVersion = false;
+
     @Override
     public void onLoad() {
 
@@ -68,13 +71,15 @@ public class TotalEssentialsJava extends JavaPlugin {
         try {
             version = getLatestVersion("GilbertoKPL", "TotalEssentials");
 
-            if (!Objects.equals(version, this.getDescription().getVersion())) {
-                System.out.println("Existe uma nova versão disponivel = " + version + " baixando...");
-                jarPath = "plugins/TotalEssentials-" + version +".jar";
-                boolean archive = downloadArchive("https://github.com/GilbertoKPL/TotalEssentials/releases/download/"+ version +"/TotalEssentials-" + version +".jar", jarPath);
-                if (archive) {
-                    new File("plugins/TotalEssentials-" + this.getDescription().getVersion() +".jar").deleteOnExit();
-                    update = true;
+            if (publicVersion) {
+                if (!Objects.equals(version, this.getDescription().getVersion())) {
+                    System.out.println("Existe uma nova versão disponivel = " + version + " baixando...");
+                    jarPath = "plugins/TotalEssentials-" + version + ".jar";
+                    boolean archive = downloadArchive("https://github.com/GilbertoKPL/TotalEssentials/releases/download/" + version + "/TotalEssentials-" + version + ".jar", jarPath);
+                    if (archive) {
+                        new File("plugins/TotalEssentials-" + this.getDescription().getVersion() + ".jar").deleteOnExit();
+                        update = true;
+                    }
                 }
             }
 
@@ -171,6 +176,8 @@ public class TotalEssentialsJava extends JavaPlugin {
         if (Bukkit.getBukkitVersion().contains("1.5.2") || Bukkit.getVersion().contains("1.5.2")) {
             lowVersion = true;
         }
+
+        JDALogger.setFallbackLoggerEnabled(false);
 
         Discord.INSTANCE.startBot();
 
