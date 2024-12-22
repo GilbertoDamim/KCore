@@ -1,6 +1,5 @@
 package github.gilbertokpl.total.commands
 
-import github.gilbertokpl.core.external.cache.Cache
 import github.gilbertokpl.core.external.command.CommandTarget
 import github.gilbertokpl.core.external.command.annotations.CommandPattern
 import github.gilbertokpl.total.TotalEssentialsJava
@@ -12,8 +11,10 @@ import github.gilbertokpl.total.config.files.LangConfig
 import github.gilbertokpl.total.config.files.MainConfig
 import github.gilbertokpl.total.discord.Discord
 import github.gilbertokpl.total.util.PluginUtil
+import github.gilbertokpl.total.util.VipUtil.checkVip
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
+import org.bukkit.inventory.ItemStack
 import org.jetbrains.exposed.sql.transactions.transaction
 
 class CommandTotal : github.gilbertokpl.core.external.command.CommandCreator("total") {
@@ -101,16 +102,22 @@ class CommandTotal : github.gilbertokpl.core.external.command.CommandCreator("to
             if (args[1].contains(Data.tokenReset)) {
                 for (players in PlayerData.vipCache.getMap()) {
 
-                    PlayerData.CommandCache[players.key, ""] = true
+                    PlayerData.commandCache[players.key, ""] = true
+
+                    PlayerData.vipItems[players.key, ArrayList<ItemStack>()] = true
 
                     if (players.value.isNullOrEmpty()) continue
 
                     val p = PlayerData.vipCache[players.key] ?: continue
 
+                    if (checkVip(players.key)) {
+                        continue
+                    }
+
                     for (vips in p) {
                         val vipItems = VipData.vipItems[vips.key]!!
 
-                        var commands = PlayerData.CommandCache[players.key] ?: ""
+                        var commands = PlayerData.commandCache[players.key] ?: ""
 
                         for (c in (VipData.vipCommands[vips.key] ?: ArrayList())) {
                             commands += if (commands == "") c.replace(
@@ -119,7 +126,7 @@ class CommandTotal : github.gilbertokpl.core.external.command.CommandCreator("to
                             ) else "-" + c.replace("%player%", players.key)
                         }
 
-                        PlayerData.CommandCache[players.key, commands] = true
+                        PlayerData.commandCache[players.key, commands] = true
 
                         PlayerData.vipItems[players.key, vipItems] = true
                     }

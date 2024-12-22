@@ -38,7 +38,7 @@ class CommandSetHome : github.gilbertokpl.core.external.command.CommandCreator("
 
             val pName = split[0]
 
-            if (!PlayerData.checkIfPlayerExist(pName)) {
+            if (!PlayerData.checkIfPlayerExists(pName)) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }

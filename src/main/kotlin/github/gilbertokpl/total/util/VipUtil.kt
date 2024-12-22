@@ -10,13 +10,16 @@ object VipUtil {
 
     val world: World? = null
 
-    fun checkVip(entity: String) {
-        val vips = PlayerData.vipCache[entity] ?: return
+    fun checkVip(entity: String): Boolean {
+        val vips = PlayerData.vipCache[entity] ?: return false
 
         val toExclude = ArrayList<String>()
 
+        var delet = false
+
         for (v in vips) {
             if (v.value < System.currentTimeMillis()) {
+                delet = true
                 toExclude.add(v.key)
             }
         }
@@ -31,6 +34,7 @@ object VipUtil {
         if (toExclude.isNotEmpty()) {
             updateCargo(entity)
         }
+        return delet
     }
 
     fun updateCargo(entity: String, newVip: String? = null, execute: Boolean = true): String? {

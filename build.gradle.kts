@@ -1,13 +1,13 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    kotlin("jvm") version "2.0.0"
-    id("io.github.goooler.shadow") version "8.1.7"
+    kotlin("jvm") version "2.1.0"
+    id("com.gradleup.shadow") version "9.0.0-beta4"
 }
 
 val base = "github.gilbertokpl.library"
 
-version = "1.1.5"
+version = "1.1.7"
 
 
 repositories {
@@ -39,66 +39,66 @@ dependencies {
 
 
     //exposed
-    implementation("org.jetbrains.exposed:exposed-core:0.50.1") {
+    compileOnly("org.jetbrains.exposed:exposed-core:0.57.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    implementation("org.jetbrains.exposed:exposed-dao:0.50.1") {
+    compileOnly("org.jetbrains.exposed:exposed-dao:0.57.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.50.1") {
+    compileOnly("org.jetbrains.exposed:exposed-jdbc:0.57.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
 
     //H2 database
-    implementation("com.github.h2database:h2database:version-2.2.224") {
+    compileOnly("com.h2database:h2:2.2.224") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
     //Mysql with MariaDB driver database
-    implementation("org.mariadb.jdbc:mariadb-java-client:3.4.0") {
+    compileOnly("org.mariadb.jdbc:mariadb-java-client:3.5.1") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
     //implementation to mysql - MariaDB
-    implementation("com.zaxxer:HikariCP:4.0.3") {
+    compileOnly("com.zaxxer:HikariCP:4.0.3") {
             exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
     //remove all connections of slf4
-    implementation("org.slf4j:slf4j-nop:2.0.13")
+    compileOnly("org.slf4j:slf4j-nop:2.0.13")
 
     //simple yaml to help in yaml
-    implementation("me.carleslc.Simple-YAML:Simple-Yaml:1.7.3") {
+    compileOnly("me.carleslc.Simple-YAML:Simple-Yaml:1.7.3") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
     //host info
-    implementation("com.github.oshi:oshi-core:6.6.1") {
+    compileOnly("com.github.oshi:oshi-core:6.6.5") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0") {
+    compileOnly("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.1.0") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    implementation("net.dv8tion:JDA:5.0.0-beta.24") {
+    compileOnly("net.dv8tion:JDA:5.2.1") {
         exclude("club.minnced","opus-java")
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }
 
-    implementation("org.json:json:20240205") {
+    compileOnly("org.json:json:20240303") {
         exclude("org.slf4j", "slf4j-api")
         exclude("org.slf4j", "jcl-over-slf4j")
     }

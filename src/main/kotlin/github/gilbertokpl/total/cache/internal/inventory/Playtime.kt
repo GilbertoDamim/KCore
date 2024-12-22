@@ -49,7 +49,7 @@ object Playtime {
         Data.playTimeInventoryCache = Collections.unmodifiableMap(inventoryCache)
     }
 
-    private fun createHeadItem(name: String, time: Long): ItemStack {
+    fun createHeadItem(name: String, time: Long): ItemStack {
         val playerName = LangConfig.playtimeInventoryItemsName.replace("%player%", name)
         val item = ItemStack(MaterialUtil["head"]!!, 1, SkullType.PLAYER.ordinal.toShort())
         val meta = item.itemMeta

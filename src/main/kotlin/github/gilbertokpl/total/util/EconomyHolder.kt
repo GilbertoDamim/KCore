@@ -36,11 +36,11 @@ class EconomyHolder : Economy {
     }
 
     override fun hasAccount(playerName: String): Boolean {
-        return PlayerData.checkIfPlayerExist(playerName)
+        return PlayerData.checkIfPlayerExists(playerName)
     }
 
     override fun hasAccount(player: OfflinePlayer): Boolean {
-        return PlayerData.checkIfPlayerExist(player.name ?: "")
+        return PlayerData.checkIfPlayerExists(player.name ?: "")
     }
 
     override fun hasAccount(playerName: String, worldName: String): Boolean {

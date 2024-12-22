@@ -3,25 +3,27 @@ package github.gilbertokpl.total.cache.serializer
 import github.gilbertokpl.core.external.cache.convert.SerializerBase
 import github.gilbertokpl.total.cache.local.KitsData
 
-
 internal class KitSerializer : SerializerBase<HashMap<String, Long>, String> {
     override fun convertToDatabase(hash: HashMap<String, Long>): String {
-        val validEntries = hash.entries.filter { (key, value) ->
-            KitsData.checkIfExist(key) && (value != 0L) && ((KitsData.kitTime[key]
-                ?: (0L + value)) > System.currentTimeMillis())
-        }.map { (key, value) ->
-            "$key,$value"
-        }
-        return validEntries.joinToString("|")
+        return hash.entries
+            .filter { (key, value) ->
+                KitsData.checkIfExist(key) &&
+                        KitsData.kitTime[key]?.let { timeAll -> value != 0L && (timeAll + value) > System.currentTimeMillis() } == true
+            }
+            .joinToString("|") { "${it.key},${it.value}" }
     }
 
     override fun convertToCache(value: String): HashMap<String, Long> {
         val hash = HashMap<String, Long>()
-        for (entryString in value.split("|")) {
-            val split = entryString.split(",")
-            if (split.size < 2) continue
+        if (value.isBlank()) return hash
+
+        for (entry in value.split("|")) {
+            val split = entry.split(",", limit = 2)
+            if (split.size != 2) continue
+
             val nameKit = split[0].lowercase()
-            val timeKit = split[1].toLong()
+            val timeKit = split[1].toLongOrNull() ?: continue
+
             hash[nameKit] = timeKit
         }
         return hash

@@ -33,7 +33,7 @@ class CommandHome : github.gilbertokpl.core.external.command.CommandCreator("hom
 
         val p = s as Player
 
-        if (!PlayerData.checkIfPlayerExist(p)) return false
+        if (!PlayerData.checkIfPlayerExists(p)) return false
 
         if (args.isEmpty()) {
             p.sendMessage(
@@ -51,7 +51,7 @@ class CommandHome : github.gilbertokpl.core.external.command.CommandCreator("hom
 
             val pName = split[0].lowercase()
 
-            if (!PlayerData.checkIfPlayerExist(pName)) {
+            if (!PlayerData.checkIfPlayerExists(pName)) {
                 p.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }

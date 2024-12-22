@@ -26,10 +26,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.CodeSource;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.jar.*;
+
+import static org.jetbrains.exposed.sql.transactions.ThreadLocalTransactionManagerKt.transaction;
 
 public class TotalEssentialsJava extends JavaPlugin {
 
@@ -59,19 +60,19 @@ public class TotalEssentialsJava extends JavaPlugin {
 
     public static String jarPath = null;
 
-    public static Boolean publicVersion = false;
+    public static Boolean publicVer = true;
 
     @Override
     public void onLoad() {
+
 
         String version;
 
         //update
 
         try {
-            version = getLatestVersion("GilbertoKPL", "TotalEssentials");
-
-            if (publicVersion) {
+            if (publicVer) {
+                version = getLatestVersion("GilbertoKPL", "TotalEssentials");
                 if (!Objects.equals(version, this.getDescription().getVersion())) {
                     System.out.println("Existe uma nova versão disponivel = " + version + " baixando...");
                     jarPath = "plugins/TotalEssentials-" + version + ".jar";
@@ -81,6 +82,9 @@ public class TotalEssentialsJava extends JavaPlugin {
                         update = true;
                     }
                 }
+            }
+            else {
+                version = this.getDescription().getVersion();
             }
 
         } catch (IOException ignored) {
@@ -190,6 +194,7 @@ public class TotalEssentialsJava extends JavaPlugin {
         PluginLoop.INSTANCE.start();
 
         instance.getServer().getLogger().setFilter(new Filter());
+
     }
 
     @Override

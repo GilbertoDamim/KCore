@@ -37,10 +37,13 @@ internal data class DataTeleport(
             tpaData[pSender] = dataTeleport
 
             CompletableFuture.runAsync({
-                TimeUnit.SECONDS.sleep(time.toLong())
-                val sender = tpaData[pSender]
-                if (sender?.wait == true) {
-                    try {
+                try {
+                    TimeUnit.SECONDS.sleep(time.toLong())
+
+                    val senderData = tpaData[pSender]
+                    if (senderData?.wait == true) {
+                        tpaData.remove(pSender)
+
                         github.gilbertokpl.total.TotalEssentialsJava.instance.server.scheduler.runTask(
                             github.gilbertokpl.total.TotalEssentialsJava.instance
                         ) { BukkitRunnable ->
@@ -51,9 +54,9 @@ internal data class DataTeleport(
                                 )
                             )
                         }
-                    } finally {
-                        tpaData.remove(pSender)
                     }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }, TaskUtil.getInternalExecutor())
         }

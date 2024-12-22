@@ -27,7 +27,7 @@ class LocationSerializer : SerializerBase<Location?, String> {
             }
             val pitch = parts.getOrElse(4) { "0.0" }.toFloat()
             val yaw = parts.getOrElse(5) { "0.0" }.toFloat()
-            Location(w, x, y, z, pitch, yaw)
+            Location(w, x, y, z, yaw, pitch)
         } catch (e: Throwable) {
             e.printStackTrace()
             null

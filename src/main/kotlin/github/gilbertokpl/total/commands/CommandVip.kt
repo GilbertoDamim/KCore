@@ -76,7 +76,7 @@ class CommandVip : github.gilbertokpl.core.external.command.CommandCreator("vip"
 
         if (args[0].lowercase() == "remover" && args.size == 3 && s.hasPermission("totalessentials.commands.vip.admin")) {
 
-            if (!PlayerData.checkIfPlayerExist(args[1])) {
+            if (!PlayerData.checkIfPlayerExists(args[1])) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }
@@ -278,7 +278,7 @@ class CommandVip : github.gilbertokpl.core.external.command.CommandCreator("vip"
 
         if (args[0].lowercase() == "tempo" && args.size == 2 && s.hasPermission("totalessentials.commands.vip.admin")) {
 
-            if (!PlayerData.checkIfPlayerExist(args[1])) {
+            if (!PlayerData.checkIfPlayerExists(args[1])) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }
@@ -345,7 +345,7 @@ class CommandVip : github.gilbertokpl.core.external.command.CommandCreator("vip"
                 return false
             }
 
-            if (!PlayerData.checkIfPlayerExist(args[1])) {
+            if (!PlayerData.checkIfPlayerExists(args[1])) {
                 PlayerData.createNewPlayerData(args[1].lowercase())
             }
 

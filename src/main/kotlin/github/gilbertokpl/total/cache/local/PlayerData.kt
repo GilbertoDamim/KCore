@@ -36,9 +36,9 @@ object PlayerData : CacheBase {
     val discordCache = ins.long(this, PlayerDataSQL.DiscordTable)
     val playTimeCache = ins.long(this, PlayerDataSQL.PlaytimeTable)
     val colorCache = ins.string(this, PlayerDataSQL.colorTable)
-    val CommandCache = ins.string(this, PlayerDataSQL.CommandTable)
-    val LimiterItemCache = ins.hashMap(this, PlayerDataSQL.LimiterItemTable, LimiterItemSerializer())
-    val LimiterLocationCache = ins.hashMap(this, PlayerDataSQL.LimiterLocationTable, LimiterLocationSerializer())
+    val commandCache = ins.string(this, PlayerDataSQL.CommandTable)
+    val limiterItemCache = ins.hashMap(this, PlayerDataSQL.LimiterItemTable, LimiterItemSerializer())
+    val limiterLocationCache = ins.hashMap(this, PlayerDataSQL.LimiterLocationTable, LimiterLocationSerializer())
     val inInvSee = ins.simplePlayer()
     val homeLimitCache = ins.simpleInteger()
     val inTeleport = ins.simpleBoolean()
@@ -46,107 +46,127 @@ object PlayerData : CacheBase {
     val playtimeLocal = ins.simpleLong()
     val playerInfo = ins.simpleList<String>()
 
-    fun checkIfPlayerExist(entity: String): Boolean {
+    fun checkPlayerInfo() {
+        for (i in moneyCache.getMap().keys) {
+            if (kitsCache[i]!!.isEmpty() && homeCache[i]!!.isEmpty() && vipCache[i]!!.isEmpty() && vipItems[i]!!.isEmpty() && moneyCache[i]!!.toInt() == MainConfig.moneyDefault) {
+                kitsCache.remove(i)
+                homeCache.remove(i)
+                vipCache.remove(i)
+                vipItems.remove(i)
+                nickCache.remove(i)
+                gameModeCache.remove(i)
+                vanishCache.remove(i)
+                lightCache.remove(i)
+                flyCache.remove(i)
+                backLocation.remove(i)
+                speedCache.remove(i)
+                moneyCache.remove(i)
+                afk.remove(i)
+                playTimeCache.remove(i)
+                discordCache.remove(i)
+                colorCache.remove(i)
+                commandCache.remove(i)
+                limiterItemCache.remove(i)
+                limiterLocationCache.remove(i)
+            }
+        }
+    }
+
+    fun checkIfPlayerExists(entity: String): Boolean {
         return nickCache[entity.lowercase()] != null
     }
 
-    fun checkIfPlayerExist(entity: Player): Boolean {
+    fun checkIfPlayerExists(entity: Player): Boolean {
         return nickCache[entity] != null
     }
 
     fun createNewPlayerData(entity: String) {
-        kitsCache[entity] = HashMap()
-        homeCache[entity] = HashMap()
-        vipCache[entity] = HashMap()
-        vipItems[entity] = ArrayList()
+        val defaultLocation = SpawnData.spawnLocation["spawn"]
+            ?: Location(TotalEssentialsJava.instance.server.getWorld("world"), 1.0, 1.0, 1.0)
+
+        kitsCache[entity] = hashMapOf()
+        homeCache[entity] = hashMapOf()
+        vipCache[entity] = hashMapOf()
+        vipItems[entity] = arrayListOf()
         nickCache[entity] = ""
         gameModeCache[entity] = 0
         vanishCache[entity] = false
         lightCache[entity] = false
         flyCache[entity] = false
-        backLocation[entity] = SpawnData.spawnLocation["spawn"]
-            ?: Location(TotalEssentialsJava.instance.server.getWorld("world"), 1.0, 1.0, 1.0)
+        backLocation[entity] = defaultLocation
         speedCache[entity] = 1
         moneyCache[entity] = MainConfig.moneyDefault?.toDouble() ?: 0.0
         afk[entity] = 1
         playTimeCache[entity] = 0
         discordCache[entity] = 0
         colorCache[entity] = ""
+        commandCache[entity] = ""
     }
 
-    fun values(p: Player) {
-
+    fun applyPlayerSettings(p: Player) {
         afk[p] = 1
 
-        val nick = nickCache[p]
-
-        if (nick != "" && nick != p.displayName && p.hasPermission("totalessentials.commands.nick")) {
-            PlayerUtil.setDisplayName(p, nick)
-        }
-
-        val gameModeName = PlayerUtil.getGameModeNumber(gameModeCache[p].toString())
-
-        if (p.gameMode != gameModeName && gameModeName == GameMode.SURVIVAL) {
-            p.gameMode = gameModeName
-        }
-        if (p.gameMode != gameModeName && p.hasPermission("totalessentials.commands.gamemode")) {
-            p.gameMode = gameModeName
-        }
-        if (vanishCache[p]!!) {
-            p.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1))
-            for (it in TotalEssentialsJava.basePlugin.getReflection().getPlayers()) {
-                if (it.player!!.hasPermission("totalessentials.commands.vanish")
-                    || it.player!!.hasPermission("totalessentials.bypass.vanish")
-                ) {
-                    continue
-                }
-                @Suppress("DEPRECATION")
-                it.hidePlayer(p)
+        nickCache[p]?.let { nick ->
+            if (nick.isNotEmpty() && nick != p.displayName && p.hasPermission("totalessentials.commands.nick")) {
+                PlayerUtil.setDisplayName(p, nick)
             }
         }
 
-        if (lightCache[p]!!) {
+        gameModeCache[p]?.let { gameModeNumber ->
+            val gameModeName = PlayerUtil.getGameModeNumber(gameModeNumber.toString())
+            if (p.gameMode != gameModeName && (gameModeName == GameMode.SURVIVAL || p.hasPermission("totalessentials.commands.gamemode"))) {
+                p.gameMode = gameModeName
+            }
+        }
+
+        vanishCache[p]?.takeIf { it }?.let {
+            p.addPotionEffect(PotionEffect(PotionEffectType.INVISIBILITY, Int.MAX_VALUE, 1))
+            TotalEssentialsJava.basePlugin.getReflection().getPlayers().forEach { otherPlayer ->
+                otherPlayer.player?.takeIf { !it.hasPermission("totalessentials.commands.vanish") && !it.hasPermission("totalessentials.bypass.vanish") }
+                    ?.hidePlayer(p)
+            }
+        }
+
+        lightCache[p]?.takeIf { it }?.let {
             p.addPotionEffect(PotionEffect(PotionEffectType.NIGHT_VISION, Int.MAX_VALUE, 1))
         }
 
-        if (flyCache[p]!!) {
+        flyCache[p]?.takeIf { it }?.let {
             p.allowFlight = true
             p.isFlying = true
         }
 
-        val speed = speedCache[p]!!
-
-        if (speed != 1) {
-            p.walkSpeed = (speed * 0.1).toFloat()
-            p.flySpeed = (speed * 0.1).toFloat()
+        speedCache[p]?.takeIf { it != 1 }?.let { speed ->
+            val speedValue = (speed * 0.1).toFloat()
+            p.walkSpeed = speedValue
+            p.flySpeed = speedValue
         }
 
-        if (playTimeCache[p]!! > 31557600000) {
-            playTimeCache[p] = 0
+        playTimeCache[p]?.let { playTime ->
+            if (playTime > 31_557_600_000) {
+                playTimeCache[p] = 0
+            }
         }
 
-        if (!CommandCache[p].isNullOrEmpty()) {
-            for (i in CommandCache[p]?.split(" -")!!) {
+        commandCache[p]?.takeIf { it.isNotEmpty() }?.let { commands ->
+            commands.split(" -").forEach { command ->
                 TotalEssentialsJava.instance.server.dispatchCommand(
                     TotalEssentialsJava.instance.server.consoleSender,
-                    i
+                    command
                 )
             }
-            CommandCache[p] = ""
+            commandCache[p] = ""
             VipUtil.updateCargo(p.name.lowercase())
         }
 
         if (MainConfig.vanishActivated) {
-            if (p.hasPermission("totalessentials.commands.vanish") ||
-                p.hasPermission("totalessentials.bypass.vanish")
-            ) return
-            for (it in TotalEssentialsJava.basePlugin.getReflection().getPlayers()) {
-                if (vanishCache[it] ?: continue) {
-                    @Suppress("DEPRECATION")
-                    p.hidePlayer(it)
+            if (!p.hasPermission("totalessentials.commands.vanish") && !p.hasPermission("totalessentials.bypass.vanish")) {
+                TotalEssentialsJava.basePlugin.getReflection().getPlayers().forEach { otherPlayer ->
+                    vanishCache[otherPlayer]?.takeIf { it }?.let {
+                        p.hidePlayer(otherPlayer)
+                    }
                 }
             }
         }
-
     }
 }

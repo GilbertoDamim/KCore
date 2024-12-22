@@ -4,7 +4,7 @@ import github.gilbertokpl.core.external.cache.interfaces.CacheBuilder
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.locks.ReentrantLock
 
 internal class ByteCacheBuilder<T>(
     private val table: Table,
@@ -12,26 +12,38 @@ internal class ByteCacheBuilder<T>(
     private val column: Column<T>
 ) : CacheBuilder<T> {
 
-    private val hashMap = ConcurrentHashMap<String, T?>()
-    @Volatile private var toUpdate = mutableSetOf<String>()
+    private val hashMap = mutableMapOf<String, T?>()
+    private val toUpdate = mutableSetOf<String>()
+    private val lock = ReentrantLock()
 
-    override fun getMap(): Map<String, T?> = hashMap.toMap()
+    override fun getMap(): Map<String, T?> {
+        return hashMap.toMap()
+    }
 
-    override operator fun get(entity: String): T? = hashMap[entity.lowercase()]
+    override operator fun get(entity: String): T? {
+        return hashMap[entity.lowercase()]
+    }
 
-    override operator fun get(entity: Player): T? = get(entity.name)
-
-    override operator fun set(entity: Player, value: T) {
-        set(entity.name, value)
+    override operator fun get(entity: Player): T? {
+        return hashMap[entity.name.lowercase()]
     }
 
     override fun set(entity: String, value: T) {
-        hashMap[entity.lowercase()] = value
-        toUpdate.add(entity.lowercase())
+        lock.lock()
+        try {
+            hashMap[entity.lowercase()] = value
+            toUpdate.add(entity.lowercase())
+        } finally {
+            lock.unlock()
+        }
     }
 
     override fun set(entity: String, value: T, override: Boolean) {
         set(entity, value)
+    }
+
+    override operator fun set(entity: Player, value: T) {
+        set(entity.name, value)
     }
 
     override fun remove(entity: Player) {
@@ -39,45 +51,61 @@ internal class ByteCacheBuilder<T>(
     }
 
     override fun remove(entity: String) {
-        hashMap[entity.lowercase()] = null
-        toUpdate.add(entity.lowercase())
+        lock.lock()
+        try {
+            hashMap[entity.lowercase()] = null
+            toUpdate.add(entity.lowercase())
+        } finally {
+            lock.unlock()
+        }
     }
 
-    override fun update() {
-        save(toUpdate)
-    }
+    private fun save(list: List<String>) {
+        lock.lock()
+        try {
+            if (toUpdate.isEmpty()) return
 
-    private fun save(list: Set<String>) {
-        list.forEach { entity ->
-            val value = hashMap[entity]
-            val existingRecord = table.selectAll().where { primaryColumn eq entity }.singleOrNull()
-            when {
-                existingRecord == null && value != null -> {
-                    table.insert {
-                        it[primaryColumn] = entity
-                        it[column] = value
+            val existingRows = table.selectAll().where { primaryColumn inList list }
+                .associateBy { it[primaryColumn] }
+
+            for (i in list) {
+                val value = hashMap[i]
+
+                if (value == null) {
+                    existingRows[i]?.let {
+                        table.deleteWhere { primaryColumn eq i }
                     }
-                }
-                existingRecord != null && value == null -> {
-                    table.deleteWhere { primaryColumn eq entity }
-                }
-                existingRecord != null && value != null -> {
-                    table.update({ primaryColumn eq entity }) {
-                        it[column] = value
+                } else {
+                    if (i !in existingRows) {
+                        table.insert {
+                            it[primaryColumn] = i
+                            it[column] = value
+                        }
+                    } else {
+                        table.update({ primaryColumn eq i }) {
+                            it[column] = value
+                        }
                     }
                 }
             }
+
+            toUpdate.removeAll(list.toSet())
+        } finally {
+            lock.unlock()
         }
-        toUpdate.removeAll(list)
+    }
+
+    override fun update() {
+        save(toUpdate.toList())
     }
 
     override fun load() {
         table.selectAll().forEach {
-            hashMap[it[primaryColumn]] = it[column]
+            hashMap[it[primaryColumn].lowercase()] = it[column]
         }
     }
 
     override fun unload() {
-        save(toUpdate)
+        save(toUpdate.toList())
     }
 }

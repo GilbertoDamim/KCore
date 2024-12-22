@@ -13,7 +13,7 @@ import org.bukkit.inventory.ItemStack
 import java.util.*
 
 object Shop {
-    private val GLASS_MATERIAL = ItemUtil.item(MaterialUtil["glass"]!!, "§eSHOP", true)
+    val GLASS_MATERIAL = ItemUtil.item(MaterialUtil["glass"]!!, "§eSHOP", true)
     private const val ITEMS_PER_PAGE = 27
 
     fun setup() {

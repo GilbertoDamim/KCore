@@ -11,13 +11,12 @@ import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.Column
 import org.jetbrains.exposed.sql.transactions.transaction
-import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 class Cache(private val corePlugin: CorePlugin) {
 
-    val toByteUpdate = CopyOnWriteArrayList<CacheBuilder<*>>()
+    val toByteUpdate = ArrayList<CacheBuilder<*>>()
 
     fun stop() {
         transaction(corePlugin.sql) {
@@ -103,6 +102,7 @@ class Cache(private val corePlugin: CorePlugin) {
         corePlugin.getReflection().getClasses(cachePackage)
         transaction(corePlugin.sql) {
             toByteUpdate.forEach(CacheBuilder<*>::load)
+
         }
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay({
             save()

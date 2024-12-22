@@ -62,7 +62,7 @@ class CommandPlayTime : github.gilbertokpl.core.external.command.CommandCreator(
             return true
         }
 
-        if (!PlayerData.checkIfPlayerExist(args[0])) {
+        if (!PlayerData.checkIfPlayerExists(args[0])) {
             s.sendMessage(LangConfig.generalPlayerNotExist)
             return false
         }

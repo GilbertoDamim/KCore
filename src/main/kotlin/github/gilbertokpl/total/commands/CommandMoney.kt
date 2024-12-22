@@ -67,7 +67,7 @@ class CommandMoney : github.gilbertokpl.core.external.command.CommandCreator("mo
         }
 
         if (args.size == 1) {
-            if (!PlayerData.checkIfPlayerExist(args[0])) {
+            if (!PlayerData.checkIfPlayerExists(args[0])) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }
@@ -91,7 +91,7 @@ class CommandMoney : github.gilbertokpl.core.external.command.CommandCreator("mo
                 return false
             }
 
-            if (!PlayerData.checkIfPlayerExist(args[1])) {
+            if (!PlayerData.checkIfPlayerExists(args[1])) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }
@@ -133,7 +133,7 @@ class CommandMoney : github.gilbertokpl.core.external.command.CommandCreator("mo
 
             if (value < 0) return true
 
-            if (!PlayerData.checkIfPlayerExist(args[1])) {
+            if (!PlayerData.checkIfPlayerExists(args[1])) {
                 s.sendMessage(LangConfig.generalPlayerNotExist)
                 return false
             }

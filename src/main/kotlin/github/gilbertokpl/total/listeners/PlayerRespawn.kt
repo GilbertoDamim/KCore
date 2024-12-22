@@ -20,7 +20,7 @@ class PlayerRespawn : Listener {
     private fun playerData(e: PlayerRespawnEvent) {
         github.gilbertokpl.total.TotalEssentialsJava.basePlugin.getTask().sync {
             waitFor(20)
-            PlayerData.values(e.player)
+            PlayerData.applyPlayerSettings(e.player)
 
             if (MainConfig.spawnSendToSpawnOnDeath) {
                 SpawnData.teleportToSpawn(e.player)
