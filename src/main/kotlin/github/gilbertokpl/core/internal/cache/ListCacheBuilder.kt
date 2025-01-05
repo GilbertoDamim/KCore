@@ -15,7 +15,7 @@ internal class ListCacheBuilder<K, V>(
 ) : CacheBuilderV2<ArrayList<V>, V> {
 
     private val hashMap = HashMap<String, ArrayList<V>?>()
-    private val toUpdate = mutableListOf<String>()
+    private val toUpdate = mutableSetOf<String>()
     private val lock = ReentrantLock()
 
     override fun getMap(): Map<String, ArrayList<V>?> {

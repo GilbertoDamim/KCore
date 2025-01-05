@@ -17,7 +17,7 @@ internal class LocationCacheBuilder(
 ) : CacheBuilder<Location?> {
 
     private val hashMap = HashMap<String, Location?>()
-    private val toUpdate = mutableListOf<String>()
+    private val toUpdate = mutableSetOf<String>()
     private val lock = ReentrantLock()
 
     override fun getMap(): Map<String, Location?> {

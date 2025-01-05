@@ -54,7 +54,7 @@ class CommandKit : github.gilbertokpl.core.external.command.CommandCreator("kit"
         }
 
         //check if not exist
-        if (!KitsData.checkIfExist(args[0])) {
+        if (!KitsData.checkIfExist(args[0].lowercase())) {
             s.sendMessage(
                 LangConfig.kitsList.replace(
                     "%kits%",
@@ -65,7 +65,7 @@ class CommandKit : github.gilbertokpl.core.external.command.CommandCreator("kit"
         }
 
         //give kit
-        ItemUtil.pickupKit(s, args[0])
+        ItemUtil.pickupKit(s, args[0].lowercase())
         return false
     }
 }
