@@ -46,38 +46,16 @@ object PlayerData : CacheBase {
     val playtimeLocal = ins.simpleLong()
     val playerInfo = ins.simpleList<String>()
 
-    fun checkPlayerInfo() {
-        for (i in moneyCache.getMap().keys) {
-            if (kitsCache[i]!!.isEmpty() && homeCache[i]!!.isEmpty() && vipCache[i]!!.isEmpty() && vipItems[i]!!.isEmpty() && moneyCache[i]!!.toInt() == MainConfig.moneyDefault) {
-                kitsCache.remove(i)
-                homeCache.remove(i)
-                vipCache.remove(i)
-                vipItems.remove(i)
-                nickCache.remove(i)
-                gameModeCache.remove(i)
-                vanishCache.remove(i)
-                lightCache.remove(i)
-                flyCache.remove(i)
-                backLocation.remove(i)
-                speedCache.remove(i)
-                moneyCache.remove(i)
-                afk.remove(i)
-                playTimeCache.remove(i)
-                discordCache.remove(i)
-                colorCache.remove(i)
-                commandCache.remove(i)
-                limiterItemCache.remove(i)
-                limiterLocationCache.remove(i)
-            }
-        }
-    }
-
     fun checkIfPlayerExists(entity: String): Boolean {
         return nickCache[entity.lowercase()] != null
     }
 
     fun checkIfPlayerExists(entity: Player): Boolean {
         return nickCache[entity] != null
+    }
+
+    fun createNewPlayerEco(entity: String) {
+        moneyCache[entity] = MainConfig.moneyDefault?.toDouble() ?: 0.0
     }
 
     fun createNewPlayerData(entity: String) {

@@ -2,6 +2,8 @@ package github.gilbertokpl.core.internal.cache
 
 import github.gilbertokpl.core.external.cache.convert.SerializerBase
 import github.gilbertokpl.core.external.cache.interfaces.CacheBuilderV2
+import github.gilbertokpl.total.TotalEssentialsJava
+import github.gilbertokpl.total.cache.local.PlayerData
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -123,18 +125,23 @@ internal class ListCacheBuilder<K, V>(
 
                     if (value == null) {
                         existingRows[i]?.let { row ->
+                            TotalEssentialsJava.basePlugin.logger.log("Removendo Entidade chamada: $i, coluna: $column")
                             table.deleteWhere { primaryColumn eq row[primaryColumn] }
                         }
                     } else {
                         if (i !in existingKeys) {
                             table.insert {
+                                val newValue = classConvert.convertToDatabase(value)
+                                TotalEssentialsJava.basePlugin.logger.log("Setando valor da entidade: $i, coluna: $column, valor: $newValue")
                                 it[primaryColumn] = i
-                                it[column] = classConvert.convertToDatabase(value)
+                                it[column] = newValue
                             }
                             existingKeys.add(i)
                         } else {
+                            val newValue = classConvert.convertToDatabase(value)
+                            TotalEssentialsJava.basePlugin.logger.log("Setando valor da entidade: $i, coluna: $column, valor: $newValue")
                             table.update({ primaryColumn eq i }) {
-                                it[column] = classConvert.convertToDatabase(value)
+                                it[column] = newValue
                             }
                         }
                     }
@@ -157,6 +164,17 @@ internal class ListCacheBuilder<K, V>(
     }
 
     override fun unload() {
-        save(toUpdate.toList())
+        update()
+        //Verificação PlayerData
+        if (primaryColumn != PlayerData.primaryColumn) return
+        for (i in table.selectAll()) {
+            val name = i[primaryColumn]
+            val value = hashMap[i[primaryColumn].lowercase()] ?: continue
+            if (classConvert.convertToCache(i[column]) != value) {
+                TotalEssentialsJava.basePlugin.logger.log("Novo Erro encontrado da entidade: $name, coluna: $column, setando novo valor: $value")
+                set(name, value)
+            }
+        }
+        update()
     }
 }

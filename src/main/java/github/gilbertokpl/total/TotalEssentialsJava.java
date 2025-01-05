@@ -1,6 +1,7 @@
 package github.gilbertokpl.total;
 
 import github.gilbertokpl.core.external.CorePlugin;
+import github.gilbertokpl.core.internal.utils.FileLogger;
 import github.gilbertokpl.total.cache.internal.InternalLoader;
 import github.gilbertokpl.total.cache.local.PlayerData;
 import github.gilbertokpl.total.cache.loop.ClearEntitiesLoop;
@@ -29,8 +30,6 @@ import java.security.CodeSource;
 import java.util.Enumeration;
 import java.util.Objects;
 import java.util.jar.*;
-
-import static org.jetbrains.exposed.sql.transactions.ThreadLocalTransactionManagerKt.transaction;
 
 public class TotalEssentialsJava extends JavaPlugin {
 

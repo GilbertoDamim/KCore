@@ -2,11 +2,12 @@ package github.gilbertokpl.core.internal.cache
 
 import github.gilbertokpl.core.external.cache.convert.SerializerBase
 import github.gilbertokpl.core.external.cache.interfaces.CacheBuilder
+import github.gilbertokpl.total.TotalEssentialsJava
+import github.gilbertokpl.total.cache.local.PlayerData
 import github.gilbertokpl.total.config.files.MainConfig
 import org.bukkit.Location
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import java.util.concurrent.locks.ReentrantLock
 
 internal class LocationCacheBuilder(
@@ -93,24 +94,22 @@ internal class LocationCacheBuilder(
             for (i in list) {
                 if (i in toUpdate) {
                     toUpdate.remove(i)
-                    val value = hashMap[i]
-
-                    if (value == null) {
-                        existingRows[i]?.let { row ->
-                            table.deleteWhere { primaryColumn eq row[primaryColumn] }
+                    val value = hashMap[i] ?: continue
+                    if (i !in existingKeys) {
+                        val newValue = classConvert.convertToDatabase(value)
+                        TotalEssentialsJava.basePlugin.logger.log("Setando valor da entidade: $i, coluna: $column, valor: $newValue")
+                        table.insert {
+                            it[primaryColumn] = i
+                            it[column] = newValue
                         }
+                        existingKeys.add(i)
                     } else {
-                        if (i !in existingKeys) {
-                            table.insert {
-                                it[primaryColumn] = i
-                                it[column] = classConvert.convertToDatabase(value)
-                            }
-                            existingKeys.add(i)
-                        } else {
-                            table.update({ primaryColumn eq i }) {
-                                it[column] = classConvert.convertToDatabase(value)
-                            }
+                        val newValue = classConvert.convertToDatabase(value)
+                        TotalEssentialsJava.basePlugin.logger.log("Setando valor da entidade: $i, coluna: $column, valor: $newValue")
+                        table.update({ primaryColumn eq i }) {
+                            it[column] = newValue
                         }
+
                     }
                 }
             }
@@ -144,6 +143,6 @@ internal class LocationCacheBuilder(
     }
 
     override fun unload() {
-        save(toUpdate.toList())
+        update()
     }
 }

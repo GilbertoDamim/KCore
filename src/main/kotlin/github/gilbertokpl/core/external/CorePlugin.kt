@@ -6,8 +6,10 @@ import github.gilbertokpl.core.external.config.values.Value
 import github.gilbertokpl.core.external.task.Task
 import github.gilbertokpl.core.external.utils.*
 import github.gilbertokpl.core.internal.events.Events
+import github.gilbertokpl.core.internal.utils.FileLogger
 import org.bukkit.plugin.Plugin
 import org.jetbrains.exposed.sql.Table
+import java.io.File
 
 class CorePlugin(pl: Plugin) {
 
@@ -58,6 +60,9 @@ class CorePlugin(pl: Plugin) {
     //obf
     private val encryptInstance = Encrypt()
 
+    //logger
+    lateinit var logger: FileLogger
+
     fun startConfig(configPackage: String) {
         mainPath = plugin.dataFolder.path
         langPath = plugin.dataFolder.path + "/lang/"
@@ -71,6 +76,7 @@ class CorePlugin(pl: Plugin) {
         cachePackage: String,
         databaseTable: List<Table>
     ) {
+        logger = FileLogger()
         getDatabase().start(databaseTable)
         getReflection().registerCommandByPackage(commandPackage)
         Events(this).start(listenerPackage)

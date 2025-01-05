@@ -174,7 +174,7 @@ class EconomyHolder : Economy {
 
     override fun createPlayerAccount(playerName: String?): Boolean {
         if (playerName != null) {
-            PlayerData.createNewPlayerData(playerName)
+            PlayerData.createNewPlayerEco(playerName)
             return true
         }
         return false
@@ -183,7 +183,7 @@ class EconomyHolder : Economy {
     override fun createPlayerAccount(player: OfflinePlayer?): Boolean {
         val playerName = player?.name
         if (playerName != null) {
-            PlayerData.createNewPlayerData(playerName)
+            PlayerData.createNewPlayerEco(playerName)
             return true
         }
         return false
@@ -191,7 +191,7 @@ class EconomyHolder : Economy {
 
     override fun createPlayerAccount(playerName: String?, worldName: String?): Boolean {
         if (playerName != null) {
-            PlayerData.createNewPlayerData(playerName)
+            PlayerData.createNewPlayerEco(playerName)
             return true
         }
         return false
@@ -200,7 +200,7 @@ class EconomyHolder : Economy {
     override fun createPlayerAccount(player: OfflinePlayer?, worldName: String?): Boolean {
         val playerName = player?.name
         if (playerName != null) {
-            PlayerData.createNewPlayerData(playerName)
+            PlayerData.createNewPlayerEco(playerName)
             return true
         }
         return false

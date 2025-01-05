@@ -2,6 +2,8 @@ package github.gilbertokpl.core.internal.cache
 
 import github.gilbertokpl.core.external.cache.convert.SerializerBase
 import github.gilbertokpl.core.external.cache.interfaces.CacheBuilderV2
+import github.gilbertokpl.total.TotalEssentialsJava
+import github.gilbertokpl.total.cache.local.PlayerData
 import org.bukkit.entity.Player
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -96,31 +98,44 @@ internal class HashMapCacheBuilder<T, V, K>(
 
         lock.lock()
         try {
-            val existingRows = table.selectAll().where { primaryColumn inList list }
+            if (toUpdate.isEmpty()) return
+
+            val existingRows = table.selectAll()
+                .where { primaryColumn inList toUpdate }
+                .toList()
                 .associateBy { it[primaryColumn] }
 
-            for (i in list) {
-                val value = hashMap[i]
+            val existingKeys = existingRows.keys.toMutableSet()
 
-                if (value == null) {
-                    existingRows[i]?.let {
-                        table.deleteWhere { primaryColumn eq i }
-                    }
-                } else {
-                    if (i !in existingRows) {
-                        table.insert {
-                            it[primaryColumn] = i
-                            it[column] = classConvert.convertToDatabase(value)
+            for (i in list) {
+                if (i in toUpdate) {
+                    toUpdate.remove(i)
+                    val value = hashMap[i]
+
+                    if (value == null) {
+                        existingRows[i]?.let { row ->
+                            TotalEssentialsJava.basePlugin.logger.log("Removendo Entidade chamada: $i, coluna: $column")
+                            table.deleteWhere { primaryColumn eq row[primaryColumn] }
                         }
                     } else {
-                        table.update({ primaryColumn eq i }) {
-                            it[column] = classConvert.convertToDatabase(value)
+                        if (i !in existingKeys) {
+                            table.insert {
+                                val newValue = classConvert.convertToDatabase(value)
+                                TotalEssentialsJava.basePlugin.logger.log("Setando valor da entidade: $i, coluna: $column, valor: $newValue")
+                                it[primaryColumn] = i
+                                it[column] = newValue
+                            }
+                            existingKeys.add(i)
+                        } else {
+                            val newValue = classConvert.convertToDatabase(value)
+                            TotalEssentialsJava.basePlugin.logger.log("Atualizando valor da entidade: $i, coluna: $column, valor: $newValue")
+                            table.update({ primaryColumn eq i }) {
+                                it[column] = newValue
+                            }
                         }
                     }
                 }
             }
-
-            toUpdate.removeAll(list.toSet())
         } finally {
             lock.unlock()
         }
@@ -143,6 +158,17 @@ internal class HashMapCacheBuilder<T, V, K>(
     }
 
     override fun unload() {
+        update()
+        //Verificação PlayerData
+        if (primaryColumn != PlayerData.primaryColumn) return
+        for (i in table.selectAll()) {
+            val value = hashMap[i[primaryColumn].lowercase()] ?: continue
+            if (classConvert.convertToCache(i[column]) != value) {
+                val name = i[primaryColumn]
+                TotalEssentialsJava.basePlugin.logger.log("Novo Erro encontrado da entidade: $name, coluna: $column, setando novo valor: $value")
+                set(name, value)
+            }
+        }
         update()
     }
 }
