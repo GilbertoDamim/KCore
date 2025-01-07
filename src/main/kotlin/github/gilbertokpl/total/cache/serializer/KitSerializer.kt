@@ -10,8 +10,10 @@ internal class KitSerializer : SerializerBase<HashMap<String, Long>, String> {
                 KitsData.checkIfExist(key) &&
                         KitsData.kitTime[key]?.let { timeAll -> value != 0L && (timeAll + value) > System.currentTimeMillis() } == true
             }
+            .sortedBy { it.key }
             .joinToString("|") { "${it.key},${it.value}" }
     }
+
 
     override fun convertToCache(value: String): HashMap<String, Long> {
         val hash = HashMap<String, Long>()

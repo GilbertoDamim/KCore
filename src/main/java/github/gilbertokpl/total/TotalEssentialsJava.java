@@ -1,7 +1,6 @@
 package github.gilbertokpl.total;
 
 import github.gilbertokpl.core.external.CorePlugin;
-import github.gilbertokpl.core.internal.utils.FileLogger;
 import github.gilbertokpl.total.cache.internal.InternalLoader;
 import github.gilbertokpl.total.cache.local.PlayerData;
 import github.gilbertokpl.total.cache.loop.ClearEntitiesLoop;
