@@ -19,7 +19,9 @@ object ShopData : CacheBase {
     val shopOpen = cache.boolean(this, ShopDataSQL.open)
 
     fun createNewShop(location: Location, player: Player) {
-        shopVisits[player] = 0
+        if (!checkIfShopExists(player.name.lowercase())) {
+            shopVisits[player] = 0
+        }
         shopLocation[player] = location
         shopOpen[player] = false
     }
